@@ -66,10 +66,6 @@ export default {
   "inicio.edp.texto": "Calor, onda y Laplace por diferencias finitas, con animación y series de Fourier.",
   "inicio.ejemplos": "Biblioteca de ejemplos",
   "inicio.ejemplos.ayuda": "Un clic abre el ejemplo con todo cargado. Los de fases posteriores aparecen como próximamente.",
-  "inicio.serie": "Otros proyectos de la serie",
-  "inicio.serie.jacobianos": "Calculadora de gradientes y jacobianos",
-  "inicio.serie.jacobianos.texto":
-    "La estabilidad de los equilibrios (Fase 2) se decide con los autovalores del jacobiano: esa calculadora lo deriva y lo verifica.",
 
   // --- Entrada común ---
   "entrada.vistaPrevia": "Vista previa",
