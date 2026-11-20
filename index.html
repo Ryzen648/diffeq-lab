@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DiffEq Lab</title>
+<meta name="description" content="Laboratorio interactivo de integrales y ecuaciones diferenciales: método paso a paso, error numérico y visualización.">
+<meta name="author" content="Ricardo Jaico Pradinett">
+<!-- Aplica el tema guardado antes del primer pintado (ver comun/js/tema.js). -->
+<script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="comun/css/tema.css">
+<link rel="stylesheet" href="css/lab.css">
+<script type="module" src="src/ui/portada.js"></script>
+</head>
+<body>
+<header class="barra-sitio">
+  <a class="marca" href="index.html" data-i18n="sitio.nombre">DiffEq Lab</a>
+  <nav class="nav" data-i18n-aria-label="nav.principal">
+    <a href="index.html" data-i18n="nav.inicio"></a>
+  </nav>
+  <button type="button" id="tema" class="boton-tema"></button>
+</header>
+<main>
+  <h1 data-i18n="sitio.nombre">DiffEq Lab</h1>
+  <p class="lead" data-i18n="inicio.entradilla">Un laboratorio interactivo de integrales y ecuaciones diferenciales.</p>
+
+  <section aria-labelledby="tituloModulos">
+    <h2 id="tituloModulos" data-i18n="inicio.modulos"></h2>
+    <div id="modulos" class="modulos"></div>
+  </section>
+
+  <section class="card" aria-labelledby="tituloEjemplos">
+    <h2 id="tituloEjemplos" data-i18n="inicio.ejemplos"></h2>
+    <p class="hint" data-i18n="inicio.ejemplos.ayuda"></p>
+    <div id="ejemplos" class="chips"></div>
+  </section>
+
+  <section class="card" aria-labelledby="tituloSerie">
+    <h2 id="tituloSerie" data-i18n="inicio.serie"></h2>
+    <p><a href="https://ryzen648.github.io/gradientes-jacobianos/" data-i18n="inicio.serie.jacobianos"></a></p>
+    <p class="muted" data-i18n="inicio.serie.jacobianos.texto"></p>
+  </section>
+
+  <footer data-i18n-html="pie.texto"></footer>
+</main>
+</body>
+</html>
