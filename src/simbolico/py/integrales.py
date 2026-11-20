@@ -98,6 +98,8 @@ def integrar(texto, a=None, b=None):
     sin_forma = F.has(sp.Integral)
     salida = {
         "integrando": tex(f),
+        # Para que la página compruebe que SymPy integró la misma función que escribió el usuario.
+        "integrandoMathjs": a_mathjs(f),
         "conPasos": con_pasos,
         "sinFormaCerrada": sin_forma,
         "primitiva": None if sin_forma else tex(F),

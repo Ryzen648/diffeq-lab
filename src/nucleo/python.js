@@ -42,7 +42,12 @@ const SYMPY_DEFINICION = Object.freeze({
 const PRECEDENCIA = Object.freeze({ add: 1, subtract: 1, multiply: 2, divide: 2, unaryMinus: 3, unaryPlus: 3, pow: 4 });
 
 function precedencia(nodo) {
-  const n = nodo.isParenthesisNode ? nodo.content : nodo;
+  // Todos los niveles de paréntesis, no solo uno: `escribir` los quita todos, así
+  // que la precedencia tiene que ser la del nodo de dentro. El editor visual
+  // escribe x^(((5)/(2))); con un solo nivel, ((5)/(2)) contaba como un átomo,
+  // el exponente salía sin paréntesis (x**5/2) y SymPy integraba otra función.
+  let n = nodo;
+  while (n.isParenthesisNode) n = n.content;
   if (n.isOperatorNode) return PRECEDENCIA[n.fn] ?? 0;
   if (n.isConstantNode && n.value < 0) return 3; // un número negativo se comporta como −a
   return 9;

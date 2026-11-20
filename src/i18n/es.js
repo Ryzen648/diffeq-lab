@@ -18,6 +18,7 @@ export default {
   "error.librerias": "No se pudieron cargar las librerías (math.js, KaTeX o Plotly). Revisa tu conexión y recarga la página.",
 
   // --- Errores del núcleo (src/nucleo/errores.js) ---
+  "error.integrandoDistinto": "SymPy recibió una función distinta de la escrita (no coinciden en x = {x}), así que su resultado no se muestra: sería la primitiva de otra función. La parte numérica sí corresponde a la función escrita.",
   "error.variableNoPermitida": "En la función {indice} aparece «{nombre}», pero aquí solo se admiten estas variables: {permitidas}.",
   "error.numeroInvalido": "No entiendo «{texto}» como valor de {campo}. Escribe un número o una expresión como pi/2 o sqrt(2).",
   "error.limitesIguales": "Los dos límites de integración son iguales: la integral vale 0. Cambia uno de los dos.",
@@ -174,7 +175,7 @@ export default {
   "impropia.criterio.dudoso": "El criterio de comparación no decide (exponente cerca de 1 o dato no fiable).",
   "impropia.oscila": "Además f cambia de signo una y otra vez: podría converger de forma condicional.",
   "impropia.porSucesion": "Decidido por cómo crece la integral truncada en cada década.",
-  "impropia.fuente.coinciden": "SymPy y el análisis numérico coinciden.",
+  "impropia.fuente.coinciden": "SymPy y el análisis numérico llegan al mismo veredicto sobre la convergencia (el valor se compara en la pestaña Verificación).",
   "impropia.fuente.sympyDecide": "El veredicto es el de SymPy (exacto); el análisis numérico no fue concluyente o difiere: mira la pestaña Verificación.",
   "impropia.fuente.soloNumerica": "Veredicto numérico (comparación con p-integrales): orientativo, no es una demostración.",
 
@@ -335,6 +336,7 @@ export default {
   "verif.residuoNumerico": "SymPy no logra simplificar $F'(x) - f(x) = {residuo}$ a 0, pero vale 0 numéricamente en varios puntos.",
   "verif.residuoFalla": "$F'(x) - f(x) = {residuo}$ no es 0: la primitiva no es correcta.",
   "verif.jsDerivada": "Comprobación independiente, en JavaScript y sin SymPy: la derivada numérica de F coincide con f en varios puntos (mayor error relativo: {error}).",
+  "verif.jsDerivadaFalla": "Comprobación independiente, en JavaScript y sin SymPy: la derivada numérica de F NO coincide con f (mayor error relativo: {error}). La primitiva mostrada no es correcta.",
   "verif.jsSinPuntos": "No hubo puntos de prueba dentro del dominio para la comprobación en JavaScript.",
   "verif.jsNoEvaluable": "La primitiva usa funciones especiales que la página no evalúa en JavaScript; queda la comprobación simbólica.",
   "verif.definida": "Valor exacto (SymPy) frente a {metodo} (JavaScript): diferencia {diferencia}.",

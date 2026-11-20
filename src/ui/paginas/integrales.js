@@ -19,6 +19,7 @@ import { prepararExpresion } from "../../nucleo/expresion.js";
 import { leerNumero } from "../../nucleo/numeros.js";
 import { ErrorCalculo } from "../../nucleo/errores.js";
 import { aPython } from "../../nucleo/python.js";
+import { comprobarMismoIntegrando } from "../../nucleo/consistencia.js";
 import { sumaRiemann } from "../../nucleo/cuadratura/riemann.js";
 import { simpsonAdaptativo } from "../../nucleo/cuadratura/adaptativa.js";
 import { estudioConvergencia, estudioGaussPuntos, METODOS_CUADRATURA, errorDe } from "../../nucleo/cuadratura/estudio.js";
@@ -233,6 +234,9 @@ function calcular({ soloNumerico = false, desdeUsuario = false } = {}) {
   integrarSimbolico(aPython(nodoSustituido), ...limites)
     .then((res) => {
       if (id !== numeroCalculo) return;
+      // Si SymPy integró otra función, su primitiva y su verificación no valen para esta:
+      // el error pasa al .catch y no se muestra nada simbólico.
+      comprobarMismoIntegrando(res.integrandoMathjs, r.f);
       r.simbolico = res;
       r.pendiente = false;
       // Con el valor exacto, el estudio de convergencia mide el error de verdad.
@@ -415,7 +419,12 @@ function pintarSolucion() {
   let ecuacion = `\\int${lim} ${fTex}\\,dx`;
   if (exacta) ecuacion += ` = ${exacta}`;
   const exactaEsNumero = exacta && /^-?\d+(\.\d+)?$/.test(exacta.trim()); // «= 1 ≈ 1» no aporta nada
-  if (hayNumero && !exactaEsNumero) ecuacion += ` \\approx ${texNumero(r.valorNumerico)}`;
+  // «= exacto ≈ decimal» tiene que ser el decimal de ESE exacto. El valor numérico de
+  // JavaScript se compara con él en Verificación; ponerlo aquí juntaba dos números
+  // distintos como si fueran el mismo cuando no coincidían.
+  const decimalExacto = exacta && s.definida.numero !== null && s.definida.numero !== undefined ? Number(s.definida.numero) : null;
+  if (decimalExacto !== null && !exactaEsNumero) ecuacion += ` \\approx ${texNumero(decimalExacto)}`;
+  else if (!exacta && hayNumero) ecuacion += ` \\approx ${texNumero(r.valorNumerico)}`;
   else if (s?.definida?.diverge === "+") ecuacion += " = +\\infty";
   else if (s?.definida?.diverge === "-") ecuacion += " = -\\infty";
   pintarTex(def, ecuacion);
@@ -696,7 +705,8 @@ function pintarVerificacion() {
       const { fn } = prepararExpresion(s.primitivaMathjs, ["x"], { parametrosPermitidos: false });
       const peor = derivadaNumericaFrenteAf(fn, r.f);
       if (peor === null) itemVerificacion("aviso", "verif.jsSinPuntos");
-      else itemVerificacion(peor < 1e-6 ? "ok" : "bad", "verif.jsDerivada", { error: cientifica(peor) });
+      else if (peor < 1e-6) itemVerificacion("ok", "verif.jsDerivada", { error: cientifica(peor) });
+      else itemVerificacion("bad", "verif.jsDerivadaFalla", { error: cientifica(peor) });
     } catch {
       itemVerificacion("aviso", "verif.jsNoEvaluable");
     }
