@@ -66,3 +66,29 @@ test("el banco escrito a mano tiene campos completos y referencias con las que s
     if (c.esperado.tipo === "indefinida") assert.doesNotThrow(() => math.evaluate(c.esperado.primitiva, { x: 0.7 }), c.id);
   }
 });
+
+test("temario: cada tema tiene nombre y estado válido, y cada tema del banco existe en el temario", async () => {
+  const { TEMARIO } = await import("../src/temario.js");
+  const { claves } = await import("../src/i18n/index.js");
+  const existentes = new Set(claves("es"));
+  const ids = new Set();
+  for (const [seccion, temas] of Object.entries(TEMARIO)) {
+    assert.ok(existentes.has(`cobertura.seccion.${seccion}`), seccion);
+    for (const tema of temas) {
+      assert.ok(!ids.has(tema.id), `tema repetido: ${tema.id}`);
+      ids.add(tema.id);
+      assert.ok(existentes.has(`cobertura.tema.${tema.id}`), `falta el nombre de ${tema.id}`);
+      assert.ok(["banco", "disponible", "parcial", "pendiente"].includes(tema.estado), tema.id);
+      assert.ok(["N", "E", "A", "C"].includes(tema.nivel), tema.id);
+      if (tema.estado === "pendiente") assert.match(tema.hito ?? "", /^H\d+$/, tema.id);
+      if (tema.nota) assert.ok(existentes.has(`cobertura.nota.${tema.nota}`), `falta la nota ${tema.nota}`);
+    }
+  }
+  const banco = JSON.parse(readFileSync(new URL("./banco/integrales.json", import.meta.url), "utf8"));
+  const temasBanco = new Set([...banco.casos.map((c) => c.tema), ...generarIntegrales(1, 40).map((c) => c.tema)]);
+  for (const tema of temasBanco) {
+    const t = TEMARIO.integrales.find((x) => x.id === tema);
+    assert.ok(t, `el banco usa el tema «${tema}», que no está en el temario`);
+    assert.equal(t.estado, "banco", `${tema} tiene casos en el banco: su estado debe ser «banco»`);
+  }
+});

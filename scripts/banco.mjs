@@ -132,7 +132,7 @@ console.log(`\nBanco de integrales: ${casos.length} casos (${manuales.length} a 
 console.log(`${"tema".padEnd(22)}${DESENLACES.map((d) => d.slice(0, 11).padStart(12)).join("")}`);
 for (const [tema, m] of Object.entries(porTema).sort()) console.log(`${tema.padEnd(22)}${DESENLACES.map((d) => String(m[d]).padStart(12)).join("")}`);
 console.log(`${"TOTAL".padEnd(22)}${DESENLACES.map((d) => String(total[d]).padStart(12)).join("")}`);
-if (opciones.salida) writeFileSync(opciones.salida, JSON.stringify({ seccion: "integrales", semilla: Number(opciones.semilla), total, porTema, resultados }, null, 2));
+if (opciones.salida) writeFileSync(opciones.salida, JSON.stringify({ seccion: "integrales", semilla: Number(opciones.semilla), fecha: new Date().toISOString().slice(0, 10), total, porTema, resultados }, null, 2));
 
 if (total.erronea_verificada > 0) {
   console.log(`\n✖ ${total.erronea_verificada} respuesta(s) errónea(s) se presentarían como verificadas.`);

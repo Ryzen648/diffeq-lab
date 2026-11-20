@@ -39,6 +39,15 @@ jobs:
           [ -d docs/capturas ] && mkdir -p _site/docs && cp -r docs/capturas _site/docs/ || true
           rsync -a --exclude '.git' --exclude '.github' --exclude 'tests' --exclude 'demo' --exclude 'scripts' comun/ _site/comun/
           touch _site/.nojekyll
+      # Informe del banco para «Qué resuelve y qué no» (cobertura.html). Si alguna
+      # respuesta errónea se presentara como verificada, el banco falla y no se publica.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Informe del banco de pruebas
+        run: node scripts/banco.mjs --semilla 1 --n 120 --salida _site/cobertura.json
       # Pages sirve con max-age=600: sin esto, quien visitó el sitio antes del
       # despliegue mezcla durante 10 minutos módulos viejos de su caché con los
       # nuevos (y la página sale rota). Ver scripts/versionar.mjs.

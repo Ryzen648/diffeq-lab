@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qué resuelve y qué no · DiffEq Lab</title>
+<meta name="description" content="Cobertura de DiffEq Lab por tema y nivel, medida con su banco de pruebas: aciertos verificados, rechazos honestos y respuestas erróneas presentadas como verificadas.">
+<meta name="author" content="Ricardo Jaico Pradinett">
+<!-- Aplica el tema guardado antes del primer pintado (ver comun/js/tema.js). -->
+<script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="comun/css/tema.css">
+<link rel="stylesheet" href="css/lab.css">
+<script type="module" src="src/ui/paginas/cobertura.js"></script>
+</head>
+<body>
+<header class="barra-sitio">
+  <a class="marca" href="index.html" data-i18n="sitio.nombre">DiffEq Lab</a>
+  <nav class="nav" data-i18n-aria-label="nav.principal">
+    <a href="index.html" data-i18n="nav.inicio"></a>
+    <a href="integrales.html" data-i18n="nav.integrales"></a>
+    <a href="edo1.html" data-i18n="nav.edo1"></a>
+    <a href="edo2.html" data-i18n="nav.edo2"></a>
+    <a href="cobertura.html" data-i18n="nav.cobertura"></a>
+  </nav>
+  <button type="button" id="tema" class="boton-tema"></button>
+</header>
+<main>
+  <h1 data-i18n="cobertura.titulo"></h1>
+  <p class="lead" data-i18n="cobertura.entradilla"></p>
+
+  <section class="card" aria-labelledby="tituloMetricas">
+    <h2 id="tituloMetricas" data-i18n="cobertura.metricas"></h2>
+    <p id="resumen"></p>
+    <p class="hint" data-i18n="cobertura.desenlaces"></p>
+  </section>
+
+  <div id="secciones"></div>
+
+  <footer data-i18n-html="pie.texto"></footer>
+</main>
+</body>
+</html>
