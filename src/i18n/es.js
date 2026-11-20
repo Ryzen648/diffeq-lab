@@ -369,6 +369,8 @@ export default {
   "verif.componente.conservada": "la cantidad conservada",
   "confianza.fallida": "No verificada: falla {componentes}. No la des por buena.",
   "confianza.parcial": "{base} · verificación parcial",
+  "confianza.divergeSoloSympy": "Diverge según SymPy · el criterio numérico no lo decide (verificación parcial)",
+  "solucion.noExiste": "no existe (diverge)",
   "confianza.divergeVerificada": "Diverge · SymPy (límite) y el criterio de comparación numérico coinciden",
 
   // --- EDO de primer orden ---
