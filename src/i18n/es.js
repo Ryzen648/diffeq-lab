@@ -582,9 +582,11 @@ export default {
 
   "edo2.fase": "Retrato de fase",
   "edo2.fase.aria": "Plano de fase con el campo vectorial, las nulclinas, los equilibrios y las trayectorias",
-  "edo2.fase.ayuda": "Las flechas dan la dirección del movimiento (todas del mismo largo). Las nulclinas son las curvas donde una de las dos derivadas es 0; los equilibrios están donde se cruzan. Haz clic en el plano (o escribe un punto abajo) para trazar la trayectoria que pasa por ahí, hacia adelante y hacia atrás.",
+  "edo2.fase.ayuda": "Las flechas dan la dirección del movimiento (todas del mismo largo). Las nulclinas son las curvas donde una de las dos derivadas es 0; los equilibrios están donde se cruzan. Desde cada silla salen sus separatrices, que separan regiones de comportamiento distinto. Haz clic en el plano (o escribe un punto abajo) para trazar la trayectoria que pasa por ahí, hacia adelante y hacia atrás.",
   "edo2.fase.noAutonomo": "Sistema no autónomo: el campo cambia con t, así que no se dibuja (ni hay nulclinas ni equilibrios fijos). Las trayectorias empiezan en t₀ y las curvas pueden cruzarse.",
   "edo2.fase.campo": "Dirección del campo",
+  "edo2.separatriz.estables": "Separatriz estable (llega a la silla)",
+  "edo2.separatriz.inestables": "Separatriz inestable (sale de la silla)",
   "edo2.nulclina": "Nulclina {var}' = 0",
   "edo2.trayectorias": "Trayectorias añadidas",
   "edo2.series": "Series temporales",
