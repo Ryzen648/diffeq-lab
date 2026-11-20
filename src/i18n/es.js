@@ -645,6 +645,13 @@ export default {
   "edo2.deriva.ayuda": "$|H(t) - H(t_0)|$ para cada método. La solución exacta conserva H; ningún método de esta página lo hace exactamente, pero el error crece más despacio cuanto mayor es el orden.",
   "edo2.deriva.noConserva": "Ojo: H no se conserva en este sistema (a lo largo de la referencia fina cambia hasta {error}, relativo). La gráfica muestra igualmente $|H(t) - H(t_0)|$.",
   "edo2.deriva.ejeY": "|H(t) − H(t₀)|",
+  "edo2.rigidez.aria": "Primera componente con Euler explícito, Euler implícito y trapecio implícito con el paso elegido",
+  "edo2.rigidez.noNegativo": "A lo largo de la solución, ningún autovalor del jacobiano tiene parte real negativa: no hay modos que se apaguen deprisa y no hay rigidez. Si un método se desvía, es por precisión, no por inestabilidad.",
+  "edo2.rigidez.texto": "A lo largo de la solución, el autovalor más negativo del jacobiano llega a $\\lambda = {lambda}$. Euler explícito multiplica cada modo por $1 + h\\lambda$ en cada paso, así que para ese modo, el más rápido, es estable solo si $|1 + h\\lambda| < 1$: aquí exige $h < {heuler}$ (es una estimación: en un sistema no lineal el jacobiano cambia a lo largo de la solución). Dormand–Prince, con tolerancia {tol}, dio {pasos} pasos ({rechazados} rechazados). Los implícitos no tienen ese límite.",
+  "edo2.rigidez.h.estable": "Con $h = {h} < {heuler}$, Euler explícito es estable.",
+  "edo2.rigidez.h.inestable": "Con $h = {h} > {heuler}$, Euler explícito amplifica algún modo en cada paso y se vuelve inestable. Euler implícito, $Y_{n+1} = Y_n + h\\,F(t_{n+1}, Y_{n+1})$, sigue estable; el trapecio también, aunque con pasos grandes deja oscilar los modos rápidos.",
+  "edo2.rigidez.newton": "Con $h = {h}$, un método implícito se detiene: en algún paso (en Van der Pol, al llegar al salto rápido) la ecuación implícita deja de tener solución cerca del paso anterior y Newton no la encuentra, y su curva se corta ahí. Ser estable no basta: con un paso fijo tan grande no se puede seguir un cambio tan brusco. Los integradores rígidos de verdad (Radau o BDF, como en solve_ivp) acortan el paso ahí.",
+  "ejemplo.vanDerPolRigido": "Van der Pol rígido (μ = 20)",
 
   "verif.edo2Residuo": "Sustituyendo la solución en la ecuación (SymPy), el residuo se simplifica exactamente a $0$.",
   "verif.edo2Cruzada": "RK4 con 4000 pasos y Dormand–Prince con tolerancia 10⁻¹² coinciden en {t} con una diferencia relativa de {diferencia}.",

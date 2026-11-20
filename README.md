@@ -66,6 +66,7 @@ Es una página estática. Todo se calcula en el navegador, sin servidor: los mé
   - campo vectorial con flechas de igual longitud en pantalla;
   - nulclinas (curvas donde x′ = 0 o y′ = 0);
   - equilibrios marcados por tipo;
+  - separatrices de cada silla: sus variedades estable e inestable, trazadas desde la silla a lo largo de los autovectores;
   - un clic traza la trayectoria que pasa por ese punto, hacia adelante y hacia atrás.
   - Si el sistema no es autónomo, no se dibuja el campo (cambia con t), pero sí las trayectorias.
 - **Equilibrios y estabilidad** (pestaña propia):
@@ -75,6 +76,7 @@ Es una página estática. Todo se calcula en el navegador, sin servidor: los mé
   - diagrama traza–determinante con la parábola D = T²/4;
   - un enlace abre el jacobiano de cada equilibrio en la [calculadora de gradientes y jacobianos](https://ryzen648.github.io/gradientes-jacobianos/).
 - **Métodos numéricos:** Euler, Heun, RK4 y Dormand–Prince sobre vectores, con su trayectoria en el plano de fase, el estudio de convergencia y, si se da una cantidad conservada H (la energía del péndulo, el invariante de Lotka–Volterra), cuánto se desvía de ella cada método.
+- **Rigidez en sistemas:** el autovalor más negativo del jacobiano a lo largo de la solución da el paso máximo de Euler explícito; con un deslizador de h se compara con Euler implícito y el trapecio implícito (Newton amortiguado con el jacobiano). En Van der Pol con μ = 20 el límite es h < 0.033. Con pasos mucho mayores, Euler implícito no pasa el salto rápido, y la página explica por qué.
 - **Solución exacta paso a paso, solo en los casos lineales:**
   - orden 2 con coeficientes constantes: ecuación característica (raíces distintas, doble o complejas), coeficientes indeterminados con detección de resonancia y, si no aplican, variación de parámetros;
   - Cauchy–Euler, con la ecuación indicial;
@@ -128,7 +130,7 @@ En EDO, Euler, Heun y RK4 dan pendientes 1, 2 y 4 (±0.1) en y′ = y y en y′ 
 
 ## Pruebas
 
-- **JavaScript** (`node:test`): 124 pruebas en 15 archivos.
+- **JavaScript** (`node:test`): 132 pruebas en 17 archivos.
   - Cada método se compara con soluciones analíticas conocidas.
   - Se comprueba el orden de convergencia, la exactitud de Gauss–Legendre hasta grado 2n − 1 (y el error exacto en grado 2n) y la estabilidad en el problema rígido.
   - Equilibrios: matrices canónicas de cada tipo, el péndulo (cinco equilibrios alternando centro y silla), Lotka–Volterra, un modelo de competencia con biestabilidad, una recta de equilibrios y el contraejemplo de Hartman–Grobman.
@@ -137,7 +139,7 @@ En EDO, Euler, Heun y RK4 dan pendientes 1, 2 y 4 (±0.1) en y′ = y y en y′ 
   - En CI corren con pytest sobre CPython y SymPy 1.14.0.
   - En local, `npm run test:py` las ejecuta dentro de Pyodide, sin instalar Python.
 
-Los 23 scripts generados (los 21 ejemplos disponibles y 2 casos de integración hacia atrás) coinciden con la página con diferencias de entre 10⁻¹⁷ y 10⁻¹¹. Los de orden 2 y sistemas comparan las dos componentes en el tiempo final y, en los lineales, `checkodesol` confirma la solución de `dsolve`.
+Los 24 scripts generados (los 22 ejemplos disponibles y 2 casos de integración hacia atrás) coinciden con la página con diferencias de entre 10⁻¹⁷ y 10⁻¹¹. Los de orden 2 y sistemas comparan las dos componentes en el tiempo final y, en los lineales, `checkodesol` confirma la solución de `dsolve`.
 
 ## Desarrollo
 
@@ -231,11 +233,8 @@ npm run servir
 - **Dominio real:** (−8)^(1/3) da NaN, como en una calculadora. Para la raíz cúbica real se usa `cbrt` o `nthRoot`.
 - El inglés está incompleto: lo que falta se muestra en español.
 
-## Lo que queda (Fases 2, 3 y 5)
+## Lo que queda (Fases 3 y 5)
 
-- **Fase 2, opcionales:**
-  - separatrices de las sillas (las variedades estable e inestable trazadas desde los autovectores);
-  - métodos implícitos para sistemas, para Van der Pol rígido (μ grande).
 - **Fase 3. EDP:**
   - calor 1D, onda 1D y Laplace 2D por diferencias finitas, con animación y series de Fourier;
   - análisis de estabilidad (condición CFL).

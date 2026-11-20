@@ -38,6 +38,8 @@ export const EJEMPLOS = Object.freeze([
   { id: "vanDerPol", modulo: "edo2", fase: "2",                                    // ciclo límite; origen: foco inestable
     datos: { tipo: "orden2", ecuacion: "x'' - mu*(1 - x^2)*x' + x = 0", t0: "0", x0: "0.5", y0: "0", tf: "30",
       xmin: "-3", xmax: "3", ymin: "-4", ymax: "4", parametros: { mu: 1 } } },
+  { id: "vanDerPolRigido", modulo: "edo2", fase: "2",                              // rígido: Euler explícito necesita h < ≈0.03
+    datos: { tipo: "orden2", ecuacion: "x'' - mu*(1 - x^2)*x' + x = 0", t0: "0", x0: "2", y0: "0", tf: "40", parametros: { mu: 20 } } },
   { id: "lotkaVolterra", modulo: "edo2", fase: "2",                                // centro no lineal en (c/d, a/b) = (1, 1)
     datos: { tipo: "sistema", f: "x*(a - b*y)", g: "y*(d*x - c)", t0: "0", x0: "2", y0: "1", tf: "30",
       xmin: "-0.2", xmax: "4", ymin: "-0.2", ymax: "3.5", H: "d*x - c*log(x) + b*y - a*log(y)", parametros: { a: 1, b: 1, c: 0.5, d: 0.5 } } },

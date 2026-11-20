@@ -210,6 +210,15 @@
       <h3 data-i18n="edo2.deriva"></h3>
       <p id="textoDeriva" class="muted"></p>
       <div id="graficaDeriva" class="grafica" role="img" data-i18n-aria-label="edo2.deriva.aria" hidden></div>
+
+      <h3 data-i18n="edo1.rigidez"></h3>
+      <p id="textoRigidez" class="muted"></p>
+      <div class="controles">
+        <label for="pasoRigidez"><span data-i18n="edo1.rigidez.h"></span> <output id="pasoRigidezValor" for="pasoRigidez"></output></label>
+        <input type="range" id="pasoRigidez" min="0" max="100" value="50">
+      </div>
+      <div id="graficaRigidez" class="grafica" role="img" data-i18n-aria-label="edo2.rigidez.aria"></div>
+      <p id="textoRigidezH" class="muted" aria-live="polite"></p>
     </section>
 
     <section role="tabpanel" id="panel-verificacion" aria-labelledby="tab-verificacion" class="card panel" tabindex="0" hidden>
