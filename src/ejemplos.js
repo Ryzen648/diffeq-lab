@@ -17,19 +17,19 @@ export const EJEMPLOS = Object.freeze([
 
   // --- EDO de primer orden (Fase 1b) ---
   { id: "logistica", modulo: "edo1", fase: "1b",
-    datos: { ecuacion: "y' = r*y*(1 - y/K)", x0: "0", y0: "1", xmin: "0", xmax: "10", parametros: { r: 1, K: 10 } } },
+    datos: { ecuacion: "y' = r*y*(1 - y/K)", x0: "0", y0: "1", xf: "10", parametros: { r: 1, K: 10 } } },
   { id: "enfriamiento", modulo: "edo1", fase: "1b",
-    datos: { ecuacion: "dy/dx = -k*(y - Ta)", x0: "0", y0: "90", xmin: "0", xmax: "20", parametros: { k: 0.3, Ta: 20 } } },
+    datos: { ecuacion: "dy/dx = -k*(y - Ta)", x0: "0", y0: "90", xf: "20", parametros: { k: 0.3, Ta: 20 } } },
   { id: "lineal", modulo: "edo1", fase: "1b",
-    datos: { ecuacion: "y' + 2*y = exp(x)", x0: "0", y0: "1", xmin: "0", xmax: "3" } },        // y = eˣ/3 + (2/3)e^{−2x}
+    datos: { ecuacion: "y' + 2*y = exp(x)", x0: "0", y0: "1", xf: "3" } },        // y = eˣ/3 + (2/3)e^{−2x}
   { id: "bernoulli", modulo: "edo1", fase: "1b",
-    datos: { ecuacion: "y' + y/x = x*y^2", x0: "1", y0: "1", xmin: "1", xmax: "1.9" } },       // y = 1/(x(2 − x)), explota en x = 2
+    datos: { ecuacion: "y' + y/x = x*y^2", x0: "1", y0: "1", xf: "1.9" } },       // y = 1/(x(2 − x)), explota en x = 2
   { id: "exacta", modulo: "edo1", fase: "1b",
-    datos: { ecuacion: "2*x*y + (x^2 + 3*y^2)*y' = 0", x0: "1", y0: "1", xmin: "1", xmax: "3" } }, // x²y + y³ = 2
+    datos: { ecuacion: "2*x*y + (x^2 + 3*y^2)*y' = 0", x0: "1", y0: "1", xf: "3" } }, // x²y + y³ = 2
   { id: "rigidez", modulo: "edo1", fase: "1b",
-    datos: { ecuacion: "y' = -50*(y - cos(x))", x0: "0", y0: "0", xmin: "0", xmax: "1.5" } },
+    datos: { ecuacion: "y' = -50*(y - cos(x))", x0: "0", y0: "0", xf: "1.5" } },
   { id: "riccati", modulo: "edo1", fase: "1b",
-    datos: { ecuacion: "y' = x^2 + y^2", x0: "0", y0: "0", xmin: "0", xmax: "1.5" } },
+    datos: { ecuacion: "y' = x^2 + y^2", x0: "0", y0: "0", xf: "1.5" } },
 
   // --- Fases posteriores ---
   { id: "pendulo", modulo: "edo2", fase: "2" },

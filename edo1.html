@@ -50,15 +50,13 @@
 
     <fieldset class="condiciones">
       <legend data-i18n="edo1.condiciones"></legend>
-      <div class="campos-limites">
-        <label for="x0" class="corto" id="etiquetaX0">x₀ =</label><input id="x0" class="campo numero" autocomplete="off" spellcheck="false">
-        <label for="y0" class="corto" id="etiquetaY0">y₀ =</label><input id="y0" class="campo numero" autocomplete="off" spellcheck="false">
+      <!-- Tres celdas del mismo ancho en una fila (en pantallas muy estrechas, apiladas). -->
+      <div class="fila-condiciones">
+        <div class="campo-condicion"><label for="x0" id="etiquetaX0">x₀</label><input id="x0" class="campo" inputmode="text" autocomplete="off" spellcheck="false"></div>
+        <div class="campo-condicion"><label for="y0" id="etiquetaY0">y₀</label><input id="y0" class="campo" inputmode="text" autocomplete="off" spellcheck="false"></div>
+        <div class="campo-condicion"><label for="xf" id="etiquetaXf" data-i18n="edo1.hasta"></label><input id="xf" class="campo" inputmode="text" autocomplete="off" spellcheck="false" aria-describedby="ayudaHasta"></div>
       </div>
-      <div class="campos-limites">
-        <label for="xmin" class="corto" data-i18n="edo1.xmin"></label><input id="xmin" class="campo numero" autocomplete="off" spellcheck="false">
-        <label for="xmax" class="corto" data-i18n="edo1.xmax"></label><input id="xmax" class="campo numero" autocomplete="off" spellcheck="false">
-      </div>
-      <p id="errorCondiciones" class="error-fila" hidden></p>
+      <p id="ayudaHasta" class="hint" data-i18n="edo1.hasta.ayuda"></p>
     </fieldset>
 
     <h3 data-i18n="entrada.vistaPrevia"></h3>
@@ -82,6 +80,10 @@
         <label for="tolerancia" class="corto" data-i18n="edo1.tolerancia"></label><input id="tolerancia" class="campo numero" autocomplete="off" value="1e-6">
       </div>
       <p class="hint" data-i18n="edo1.paso.ayuda"></p>
+      <div class="campos-limites">
+        <label for="desde" class="corto" id="etiquetaDesde" data-i18n="edo1.desde"></label><input id="desde" class="campo numero" autocomplete="off" spellcheck="false" aria-describedby="ayudaDesde">
+      </div>
+      <p id="ayudaDesde" class="hint" data-i18n="edo1.desde.ayuda"></p>
       <label for="metodoSimbolico" data-i18n="edo1.metodoSimbolico"></label>
       <select id="metodoSimbolico">
         <option value="" data-i18n="edo1.metodoSimbolico.auto"></option>
@@ -118,6 +120,7 @@
       </div>
     </div>
     <p id="avisoCopia" class="solo-lectores" role="status"></p>
+    <div id="avisoParada" class="aviso aviso-parada" role="status" hidden></div>
 
     <div class="pestanas" role="tablist" data-i18n-aria-label="resultado.titulo">
       <button role="tab" id="tab-solucion" data-pestana="solucion" aria-controls="panel-solucion" aria-selected="true" data-i18n="pestana.solucion"></button>

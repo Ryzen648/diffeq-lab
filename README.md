@@ -40,6 +40,11 @@ Es una página estática. Todo se calcula en el navegador, sin servidor: los mé
 - **Parámetros detectados solos** (`r`, `K`, `k`…), cada uno con su deslizador:
   - lo numérico se actualiza al mover;
   - lo simbólico se recalcula al soltar.
+- **Intervalo:** se dan x₀, y₀ y «hasta» (x final). Si «hasta» es menor que x₀, se integra hacia atrás con todos los métodos.
+  - «Desde», en las opciones avanzadas, amplía la ventana al otro lado de x₀: el campo de direcciones la cubre entera y la solución se traza a ambos lados.
+- **Singularidades:** si la solución deja de existir dentro del intervalo, el cálculo se detiene ahí y un aviso dice en qué x y por qué. Los motivos que distingue son: la solución diverge, el coeficiente de y′ se anula, la pendiente se hace infinita o f sale de su dominio.
+  - Ejemplo: en (2xy + 3x²) + (x² + 4y)·y′ = 0 con y(1) = 1, x² + 4y se anula en x ≈ 1.72088.
+  - Sin este corte, RK4 con paso fijo cruzaría la singularidad sin enterarse y devolvería un valor sin sentido.
 - **Campo de direcciones:** un clic (o el formulario accesible) traza la solución que pasa por ese punto.
 - **Comparador de métodos:**
   - Euler, Heun (RK2), RK4 y Dormand–Prince 5(4) adaptativo;
@@ -99,7 +104,7 @@ En EDO, Euler, Heun y RK4 dan pendientes 1, 2 y 4 (±0.1) en y′ = y y en y′ 
 
 ## Pruebas
 
-- **JavaScript** (`node:test`): 79 pruebas en 10 archivos.
+- **JavaScript** (`node:test`): 92 pruebas en 11 archivos.
   - Cada método se compara con soluciones analíticas conocidas.
   - Se comprueba el orden de convergencia, la exactitud de Gauss–Legendre hasta grado 2n − 1 (y el error exacto en grado 2n) y la estabilidad en el problema rígido.
   - También se prueban la notación, la clasificación y que todos los textos y códigos de error existan.
@@ -107,7 +112,7 @@ En EDO, Euler, Heun y RK4 dan pendientes 1, 2 y 4 (±0.1) en y′ = y y en y′ 
   - En CI corren con pytest sobre CPython y SymPy 1.14.0.
   - En local, `npm run test:py` las ejecuta dentro de Pyodide, sin instalar Python.
 
-Los 15 scripts generados para los ejemplos coinciden con la página con diferencias de entre 10⁻¹⁷ y 10⁻¹¹.
+Los 17 scripts generados (los 15 ejemplos y 2 casos de integración hacia atrás) coinciden con la página con diferencias de entre 10⁻¹⁷ y 10⁻¹¹.
 
 ## Desarrollo
 
@@ -186,6 +191,8 @@ npm run servir
   - Cuando SymPy da un veredicto exacto, prevalece.
   - Con 1/√(1−x²), la cuadratura tanh-sinh pierde precisión (≈10⁻⁸) por la cancelación al calcular 1 − x² cerca de ±1.
 - **Clasificación en vivo:** es una comprobación numérica en puntos de prueba. La definitiva es la de SymPy al calcular.
+- **Corte ante una singularidad:** todos los métodos se integran hasta el 99 % del tramo entre x₀ y el punto donde se detiene Dormand–Prince (con tolerancia 10⁻¹²). La última parte antes de la singularidad no se muestra.
+  - Para distinguir «la solución diverge» de «tangente vertical» se usa un umbral: |y| ≥ 10⁴·max(1, |y₀|) en el punto de parada. Una solución que explota muy despacio o una tangente vertical con |y| enorme podrían clasificarse mal.
 - **Solo EDO de primer orden con una función desconocida.** Las de orden 2, los sistemas y las EDP se reconocen, pero se resuelven en fases posteriores.
 - **Despejar y:** solo se intenta cuando es razonable (polinómica de grado ≤ 2, o y aparece como mucho dos veces). Si no, la solución queda en forma implícita, que es correcta.
 - **Parámetros en la parte simbólica:** se sustituyen por su valor numérico exacto (0.3 → 3/10). Se recalcula al soltar el deslizador, no se resuelve con el parámetro como símbolo.

@@ -70,6 +70,14 @@ a.chip:hover, button.chip:hover { border-color: var(--accent); }
 .interruptor input { width: 18px; height: 18px; }
 .campos-limites { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 10px; }
 .campos-limites label.corto { margin: 0; font-weight: 400; }
+/* Condición inicial: x₀, y₀ y «hasta» en una fila, tres celdas del mismo ancho. */
+/* align-items: end: si una etiqueta ocupa dos líneas en pantallas estrechas («hasta (x final)»), los campos siguen alineados. */
+.fila-condiciones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 10px 12px; margin-top: 6px; }
+.campo-condicion label { margin: 0 0 4px; font-weight: 400; font-style: italic; font-family: "Times New Roman", Times, serif; font-size: 1.05rem; }
+.campo-condicion input { width: 100%; }
+@media (max-width: 340px) { .fila-condiciones { grid-template-columns: minmax(0, 1fr); } }
+.aviso-parada { border-left: 4px solid var(--warn); background: var(--warn-bg); color: var(--text); }
+.aviso-parada p { margin: 4px 0; }
 input.numero { width: 8rem; }
 .etiquetas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; min-height: 26px; }
 .etiqueta.aviso { background: var(--warn-bg); color: var(--warn); }
