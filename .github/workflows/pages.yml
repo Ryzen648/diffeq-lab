@@ -39,6 +39,11 @@ jobs:
           [ -d docs/capturas ] && mkdir -p _site/docs && cp -r docs/capturas _site/docs/ || true
           rsync -a --exclude '.git' --exclude '.github' --exclude 'tests' --exclude 'demo' --exclude 'scripts' comun/ _site/comun/
           touch _site/.nojekyll
+      # Pages sirve con max-age=600: sin esto, quien visitó el sitio antes del
+      # despliegue mezcla durante 10 minutos módulos viejos de su caché con los
+      # nuevos (y la página sale rota). Ver scripts/versionar.mjs.
+      - name: Versionar las URL de los módulos
+        run: node scripts/versionar.mjs _site "${GITHUB_SHA::12}"
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
