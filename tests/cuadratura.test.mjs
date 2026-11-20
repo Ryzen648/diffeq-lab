@@ -110,6 +110,15 @@ test("ordenObservado descarta el piso de redondeo y los puntos que dejan de baja
   assert.equal(ordenObservado([{ h: 1, error: 1 }, { h: 0.5, error: 0.5 }]), null);
 });
 
+test("ordenObservado ignora un h grande anómalo (zona preasintótica)", () => {
+  // Como Euler en la logística con h = 2.5: se pasa de largo y su error sale menor que con h = 1.25.
+  const puntos = [0.625, 0.3125, 0.15625, 0.078125, 0.0390625].map((h) => ({ h, error: 0.7 * h }));
+  puntos.push({ h: 1.25, error: 0.9 }, { h: 2.5, error: 0.05 });
+  const r = ordenObservado(puntos);
+  assert.ok(Math.abs(r.pendiente - 1) < 0.05, `pendiente ${r.pendiente}`);
+  assert.ok(r.usados.every((p) => p.h < 2));
+});
+
 // --- Adaptativa ----------------------------------------------------------------------
 
 test("Simpson adaptativo cumple la tolerancia y refina donde f cambia bruscamente", () => {
