@@ -41,8 +41,11 @@ export function disenoBase(extra = {}) {
     margin: { l: 56, r: 16, t: 16, b: 48 },
     hovermode: "closest",
     hoverlabel: { font: { family: "system-ui, sans-serif" } },
-    // Leyenda encima del área de dibujo: debajo chocaba con el título del eje x.
-    legend: { orientation: "h", x: 0, y: 1.02, xanchor: "left", yanchor: "bottom", font: { color: c.texto } },
+    // Leyenda arriba, anclada al borde superior del contenedor (no al del
+    // dibujo): debajo chocaba con el título del eje x, y anclada al dibujo
+    // Plotly 4.3 la superponía a las curvas al ocupar varias filas. El margen
+    // superior se reserva en reservarLeyenda() según cuántas filas ocupe.
+    legend: { orientation: "h", x: 0, xanchor: "left", yref: "container", y: 1, yanchor: "top", font: { color: c.texto } },
     xaxis: { ...eje(tituloX), ...xaxis },
     yaxis: { ...eje(tituloY), ...yaxis },
     ...resto,
@@ -64,6 +67,26 @@ const CONFIG = Object.freeze({
 const dibujadas = new Map(); // div -> () => { datos, diseno }
 
 /**
+ * Plotly no reserva sitio para una leyenda colocada encima del dibujo: con
+ * varias filas, la tapaba. Se estima cuántas filas ocupa según el ancho real
+ * del contenedor y la longitud de los nombres, y se agranda el margen superior.
+ */
+function reservarLeyenda(div, datos, diseno) {
+  if (!diseno.showlegend) return diseno;
+  const nombres = datos.filter((d) => d.showlegend !== false && d.name).map((d) => d.name);
+  if (!nombres.length) return diseno;
+  const ancho = div.clientWidth || 600;
+  let filas = 1;
+  let ocupado = 0;
+  for (const nombre of nombres) {
+    const item = 40 + 7 * nombre.length; // símbolo + texto (≈ 7 px por carácter a 13 px)
+    if (ocupado > 0 && ocupado + item > ancho - 20) { filas++; ocupado = 0; }
+    ocupado += item;
+  }
+  return { ...diseno, margin: { ...diseno.margin, t: 12 + 22 * filas } };
+}
+
+/**
  * Dibuja (o redibuja) en `div`. `construir` devuelve { datos, diseno } y se
  * vuelve a llamar al cambiar el tema, para leer los colores nuevos.
  */
@@ -71,7 +94,7 @@ export function dibujar(div, construir) {
   if (!globalThis.Plotly) return;
   dibujadas.set(div, construir);
   const { datos, diseno } = construir();
-  globalThis.Plotly.react(div, datos, diseno, CONFIG);
+  globalThis.Plotly.react(div, datos, reservarLeyenda(div, datos, diseno), CONFIG);
 }
 
 export function borrar(div) {
@@ -79,10 +102,18 @@ export function borrar(div) {
   globalThis.Plotly?.purge(div);
 }
 
-/** Las pestañas ocultas tienen ancho 0: al mostrarlas hay que reajustar. */
+/**
+ * Las pestañas ocultas tienen ancho 0: al mostrarlas hay que redibujar (con
+ * el ancho real también cambia cuántas filas ocupa la leyenda).
+ */
 export function reajustar(contenedor) {
   if (!globalThis.Plotly) return;
-  contenedor.querySelectorAll(".js-plotly-plot").forEach((div) => globalThis.Plotly.Plots.resize(div));
+  contenedor.querySelectorAll(".js-plotly-plot").forEach((div) => {
+    const construir = dibujadas.get(div);
+    if (!construir) { globalThis.Plotly.Plots.resize(div); return; }
+    const { datos, diseno } = construir();
+    globalThis.Plotly.react(div, datos, reservarLeyenda(div, datos, diseno), CONFIG);
+  });
 }
 
 document.addEventListener("cambiotema", () => {
@@ -91,7 +122,7 @@ document.addEventListener("cambiotema", () => {
     for (const [div, construir] of dibujadas) {
       if (!div.isConnected) { dibujadas.delete(div); continue; }
       const { datos, diseno } = construir();
-      globalThis.Plotly.react(div, datos, diseno, CONFIG);
+      globalThis.Plotly.react(div, datos, reservarLeyenda(div, datos, diseno), CONFIG);
     }
   });
 });
