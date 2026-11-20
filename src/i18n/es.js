@@ -496,4 +496,11 @@ export default {
   "ejemplo.impropiaConverge": "Impropia convergente",
   "ejemplo.impropiaDiverge": "Impropia divergente",
   "ejemplo.singular": "Singularidad en un extremo",
+
+  // --- Plano de fase (Fase 2) ---
+  "error.noOrden2": "Es una EDO de orden {orden}: aquí van las de orden 2 (las de primer orden están en «EDO de primer orden»).",
+  "error.noFormaNormal2": "y'' aparece de forma no lineal (por ejemplo, al cuadrado), así que no se puede despejar como y'' = f(x, y, y').",
+  "error.ventanaIncompleta": "La ventana del plano de fase necesita los cuatro valores (o ninguno, para que se ajuste sola).",
+  "error.ventanaInvalida": "En la ventana del plano de fase, cada mínimo tiene que ser menor que su máximo.",
+  "error.planoNoDefinido": "El sistema no da números reales en la condición inicial (t = {t0}, ({x0}, {y0})): ahí se anula un denominador o se sale del dominio de alguna función.",
 };
