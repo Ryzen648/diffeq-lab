@@ -618,6 +618,7 @@ export default {
   "edo2.explica.degenerado": "Degenerado: $D = 0$, hay un autovalor nulo. La linealización tiene una recta de equilibrios y no basta para describir el sistema cerca del punto.",
   "edo2.hartman.lineal": "No es hiperbólico (un autovalor tiene parte real 0), pero el sistema es lineal: la clasificación es exacta.",
   "edo2.hartman.noLineal": "No es hiperbólico (un autovalor tiene parte real 0): por el teorema de Hartman–Grobman, la linealización NO decide el tipo del sistema no lineal. Puede ser un centro de verdad (Lotka–Volterra, el péndulo sin rozamiento) o un foco muy lento; míralo en el retrato de fase o con una cantidad conservada.",
+  "edo2.verJacobiano": "Ver este jacobiano en la calculadora de gradientes y jacobianos ↗",
   "edo2.hartman.hiperbolico": "Es hiperbólico (ningún autovalor con parte real 0): por el teorema de Hartman–Grobman, cerca del equilibrio el sistema no lineal tiene el mismo tipo que su linealización.",
   "edo2.trazaDet": "Diagrama traza–determinante",
   "edo2.trazaDet.ayuda": "Cada equilibrio en el plano (T, D) de su jacobiano. La parábola D = T²/4 separa nodos (debajo) de focos (encima); D < 0 son sillas, y el semieje T = 0, D > 0, centros.",
