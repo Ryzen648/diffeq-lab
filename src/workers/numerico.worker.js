@@ -7,7 +7,7 @@
 // recompila aquí con los valores actuales de los parámetros.
 
 import { compilarFuente } from "../nucleo/expresion.js";
-import { estudioEDO, referenciaNumerica } from "../nucleo/edo/estudio.js";
+import { estudioEDO, referenciaNumerica, estudioSistema, referenciaSistema } from "../nucleo/edo/estudio.js";
 
 function compilar({ fuente, argumentos, valores }) {
   const fn = compilarFuente(fuente, argumentos);
@@ -22,6 +22,19 @@ const FUNCIONES = {
     if (ref === null) return { referencia: null, estudio: null };
     return { referencia: ref, fuenteReferencia: referencia === null ? "numerica" : "exacta", estudio: estudioEDO(f, x0, y0, xf, ref) };
   },
+};
+
+/** Sistema Y' = F(t, Y): una fuente por componente, con los mismos argumentos (t, x, y, …parámetros). */
+function compilarSistema({ fuentes, argumentos, valores }) {
+  const fns = fuentes.map((fuente) => compilarFuente(fuente, argumentos));
+  return (t, Y) => fns.map((fn) => fn(t, ...Y, ...valores));
+}
+
+FUNCIONES.estudioSistema = ({ sistema, t0, Y0, tf, referencia }) => {
+  const F = compilarSistema(sistema);
+  const ref = referencia ?? referenciaSistema(F, t0, Y0, tf);
+  if (ref === null) return { referencia: null, estudio: null };
+  return { referencia: ref, fuenteReferencia: referencia === null ? "numerica" : "exacta", estudio: estudioSistema(F, t0, Y0, tf, ref) };
 };
 
 postMessage({ tipo: "estado", estado: "listo" });

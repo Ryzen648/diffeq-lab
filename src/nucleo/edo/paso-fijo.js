@@ -25,60 +25,31 @@
 // y se informa de dónde: es información (y' = y² explota en tiempo finito),
 // no un fallo del método.
 
-export const LIMITE_EXPLOSION = 1e12;
+// La implementación está en sistemas.js (componente a componente); aquí se usa
+// con vectores de una sola componente. Las pruebas comprueban que da lo mismo
+// que la implementación escalar directa que hubo antes (paso a paso, 1e−13).
 
-export const METODOS_PASO_FIJO = Object.freeze({
-  euler: {
-    orden: 1,
-    etapas: 1,
-    paso(f, x, y, h) {
-      return y + h * f(x, y);
-    },
-  },
-  heun: {
-    orden: 2,
-    etapas: 2,
-    paso(f, x, y, h) {
-      const k1 = f(x, y);
-      const k2 = f(x + h, y + h * k1);
-      return y + (h * (k1 + k2)) / 2;
-    },
-  },
-  rk4: {
-    orden: 4,
-    etapas: 4,
-    paso(f, x, y, h) {
-      const k1 = f(x, y);
-      const k2 = f(x + h / 2, y + (h * k1) / 2);
-      const k3 = f(x + h / 2, y + (h * k2) / 2);
-      const k4 = f(x + h, y + h * k3);
-      return y + (h * (k1 + 2 * k2 + 2 * k3 + k4)) / 6;
-    },
-  },
-});
+import { METODOS_SISTEMA, integrarSistemaPasoFijo, LIMITE_EXPLOSION } from "./sistemas.js";
+
+export { LIMITE_EXPLOSION };
+
+/** Orden y etapas (evaluaciones de f por paso) de cada método. */
+export const METODOS_PASO_FIJO = Object.freeze(Object.fromEntries(
+  Object.entries(METODOS_SISTEMA).map(([id, m]) => [id, Object.freeze({ id, orden: m.orden, etapas: m.etapas })]),
+));
+
+/** y' = f(x, y) escalar -> Y' = F(x, Y) con Y = [y]. */
+export const comoSistema = (f) => (x, Y) => [f(x, Y[0])];
 
 /**
  * Integra de x0 a xf con N pasos iguales (h = (xf − x0)/N, negativo si se
- * integra hacia atrás). Devuelve { xs, ys, evaluaciones, detenido }.
+ * integra hacia atrás). Devuelve { xs, ys, evaluaciones, detenido, h }.
  * `detenido` es null o { x, motivo: "explota" | "noFinito" }.
  */
 export function integrarPasoFijo(metodo, f, x0, y0, xf, N) {
-  const m = typeof metodo === "string" ? METODOS_PASO_FIJO[metodo] : metodo;
-  const h = (xf - x0) / N;
-  const xs = [x0];
-  const ys = [y0];
-  let y = y0;
-  let detenido = null;
-  for (let n = 0; n < N; n++) {
-    const x = x0 + n * h;
-    y = m.paso(f, x, y, h);
-    const xSig = n === N - 1 ? xf : x0 + (n + 1) * h;
-    if (!Number.isFinite(y)) { detenido = { x: xSig, motivo: "noFinito" }; break; }
-    xs.push(xSig);
-    ys.push(y);
-    if (Math.abs(y) > LIMITE_EXPLOSION) { detenido = { x: xSig, motivo: "explota" }; break; }
-  }
-  return { xs, ys, evaluaciones: (xs.length - 1) * m.etapas, detenido, h };
+  const id = typeof metodo === "string" ? metodo : metodo.id;
+  const r = integrarSistemaPasoFijo(id, comoSistema(f), x0, [y0], xf, N);
+  return { xs: r.xs, ys: r.Ys.map((Y) => Y[0]), evaluaciones: r.evaluaciones, detenido: r.detenido, h: r.h };
 }
 
 /** Igual, pero con un paso h dado: N = ⌈|xf − x0|/h⌉ y el último paso se ajusta. */
