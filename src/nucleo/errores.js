@@ -30,8 +30,9 @@ const CODIGOS_PROPIOS = [
   // --- Problema de valor inicial (src/nucleo/edo/problema.js) ---
   "edpFase3",                  // {}
   "orden2Fase2",               // { orden }
-  "rangoInvalido",             // {}
-  "condicionFueraDeRango",     // { x0, xmin, xmax }
+  "hastaIgualX0",              // { x0 }
+  "desdeNoContieneX0",         // { x0, desde, xf }
+  "singularEnCondicionInicial", // { x0, y0, motivo }
   "pasoInvalido",              // {}
   "toleranciaInvalida",        // {}
 
