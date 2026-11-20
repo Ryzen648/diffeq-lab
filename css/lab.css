@@ -154,3 +154,8 @@ ol.pasos-hijos { border-left: 2px solid var(--border); padding-left: 1.2rem; mar
 .ficha-equilibrio .math { overflow-x: auto; }
 /* El retrato de fase lleva una leyenda larga: en móvil, más alto para que el dibujo no quede aplastado. */
 @media (max-width: 560px) { .grafica.fase { height: 560px; } }
+
+/* Verificación compartida: la primera línea es el estado global. */
+.verif-estado { font-weight: 600; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.verif-errores { font-size: .88em; }
+.aviso-verificacion { margin-top: 0; }

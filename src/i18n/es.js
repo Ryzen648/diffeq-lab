@@ -347,6 +347,30 @@ export default {
   "verif.impropiaDudosa": "El análisis numérico no decide la convergencia; decide SymPy.",
   "verif.sinSimbolico": "Sin parte simbólica: {detalle}",
 
+  // --- Capa de verificación compartida (src/nucleo/verificacion.js) ---
+  "verif.estado.simbolica": "Estado: verificada simbólicamente (todas las comprobaciones pasan y al menos una es exacta).",
+  "verif.estado.numerica": "Estado: verificada numéricamente (todas las comprobaciones pasan, con las tolerancias indicadas; ninguna es exacta).",
+  "verif.estado.parcial": "Estado: verificación parcial (unas comprobaciones pasan y otras no se pudieron hacer).",
+  "verif.estado.pendiente": "Estado: verificación en curso…",
+  "verif.estado.inconclusa": "Estado: verificación inconclusa (no se pudo comprobar nada).",
+  "verif.estado.fallida": "Estado: verificación FALLIDA en {componentes}. El resultado no se da por bueno.",
+  "verif.errores": "(error absoluto {abs}, relativo {rel})",
+  "verif.avisoSolucion": "Este resultado NO pasó la verificación (falla: {componentes}). Se muestra para poder revisarlo, pero no lo des por bueno: detalles en la pestaña Verificación.",
+  "verif.componente.primitiva": "la primitiva",
+  "verif.componente.valorDefinido": "el valor de la integral definida",
+  "verif.componente.convergencia": "el veredicto de convergencia",
+  "verif.componente.barrow": "la regla de Barrow",
+  "verif.componente.ecuacion": "la ecuación (residuo)",
+  "verif.componente.condicionInicial": "la condición inicial",
+  "verif.componente.solucionExacta": "la solución exacta frente a la numérica",
+  "verif.componente.solucionNumerica": "la solución numérica",
+  "verif.componente.equilibrios": "los equilibrios",
+  "verif.componente.jacobiano": "el jacobiano",
+  "verif.componente.conservada": "la cantidad conservada",
+  "confianza.fallida": "No verificada: falla {componentes}. No la des por buena.",
+  "confianza.parcial": "{base} · verificación parcial",
+  "confianza.divergeVerificada": "Diverge · SymPy (límite) y el criterio de comparación numérico coinciden",
+
   // --- EDO de primer orden ---
   "edo1.titulo": "EDO de primer orden",
   "edo1.entradilla":
@@ -475,6 +499,8 @@ export default {
   "verif.edoImplicita": "Comprobación independiente: a lo largo de la solución numérica, $F(x, y(x))$ se mantiene igual a la constante (desviación máxima {error}).",
   "verif.edoSoloNumerica": "No hay solución simbólica con la que comparar; queda la comprobación cruzada entre métodos numéricos.",
   "verif.edoCruzada": "RK4 con 2000 pasos y Dormand–Prince con tolerancia 10⁻¹² coinciden en x = {x} con una diferencia de {diferencia}.",
+  "verif.edoCruzadaFalla": "RK4 con 2000 pasos y Dormand–Prince con tolerancia 10⁻¹² NO coinciden en x = {x}: difieren en {diferencia}. La solución numérica no es fiable ahí (rigidez, singularidad cercana o sensibilidad extrema).",
+  "verif.definidaFalla": "Valor exacto (SymPy) frente a {metodo} (JavaScript): NO coinciden, difieren en {diferencia}.",
 
   // --- Ejemplos (nombres) ---
   "ejemplo.logistica": "Logística",

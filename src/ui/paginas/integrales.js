@@ -20,6 +20,8 @@ import { leerNumero } from "../../nucleo/numeros.js";
 import { ErrorCalculo } from "../../nucleo/errores.js";
 import { aPython } from "../../nucleo/python.js";
 import { comprobarMismoIntegrando } from "../../nucleo/consistencia.js";
+import { comprobacion, estadoGlobal, componentesFallidos, estaVerificado, errores } from "../../nucleo/verificacion.js";
+import { pintarComprobaciones, avisarEnSolucion } from "../verificacion.js";
 import { sumaRiemann } from "../../nucleo/cuadratura/riemann.js";
 import { simpsonAdaptativo } from "../../nucleo/cuadratura/adaptativa.js";
 import { estudioConvergencia, estudioGaussPuntos, METODOS_CUADRATURA, errorDe } from "../../nucleo/cuadratura/estudio.js";
@@ -365,17 +367,24 @@ function pintarTodo() {
 function pintarConfianza() {
   const el = $("confianza");
   const s = r.simbolico;
+  // El estado sale de las mismas comprobaciones que la pestaña Verificación.
+  const lista = comprobacionesIntegral();
+  const estado = estadoGlobal(lista);
   let clase = "aviso";
   let texto;
-  const discrepa = discrepancia();
-  if (discrepa) {
+  if (estado === "fallida") {
     clase = "bad";
-    texto = t("confianza.discrepancia");
+    texto = t("confianza.fallida", { componentes: componentesFallidos(lista).map((c) => t(`verif.componente.${c}`)).join(", ") });
+  } else if (r.definida && s?.definida?.diverge) {
+    texto = t("confianza.divergeVerificada");
+    if (estaVerificado(estado)) clase = "ok";
   } else if (s && !s.sinFormaCerrada && (!r.definida || s.definida?.encontrada)) {
-    clase = "ok";
     texto = s.conPasos
       ? t("confianza.exactoPasos", { metodo: t(`metodo.${s.metodos[0] ?? "inmediata"}`) })
       : t("confianza.exactoSinPasos");
+    // «Exacto» en verde solo si la verificación lo respalda.
+    if (estaVerificado(estado)) clase = "ok";
+    else if (estado === "parcial") texto = t("confianza.parcial", { base: texto });
   } else if (r.definida && r.valorNumerico !== null) {
     texto = t("confianza.numerico", { metodo: t(`metodoNumerico.${r.metodoNumerico}`), error: cientifica(r.errorEstimado ?? 0) });
   } else if (r.definida && r.impropia?.veredicto === "diverge") {
@@ -662,16 +671,6 @@ function pintarNumerico() {
 
 // --- Verificación ---------------------------------------------------------------------------
 
-function itemVerificacion(estado, clave, datos = {}) {
-  const li = crear("li", `verif ${estado}`);
-  const icono = { ok: "✓", bad: "✗", aviso: "!", pendiente: "…" }[estado];
-  li.append(crear("span", "verif-icono", icono));
-  const texto = crear("span");
-  textoConFormulas(texto, t(clave, datos));
-  li.append(texto);
-  $("verificacion").append(li);
-}
-
 /**
  * Comprobación independiente de SymPy: deriva numéricamente (diferencia
  * centrada) la primitiva evaluada en JS y la compara con f. Devuelve el mayor
@@ -690,49 +689,72 @@ function derivadaNumericaFrenteAf(F, f) {
   return peor;
 }
 
-function pintarVerificacion() {
-  $("verificacion").replaceChildren();
+/**
+ * Comprobaciones de lo que se muestra (capa compartida: src/nucleo/verificacion.js).
+ * La etiqueta de confianza y el aviso de la pestaña Solución salen del estado
+ * de esta lista, no de cálculos aparte.
+ */
+function comprobacionesIntegral() {
+  const lista = [];
   const s = r.simbolico;
-  if (r.pendiente) itemVerificacion("pendiente", "verif.pendiente");
+  const metodoNum = r.valorNumerico !== null && r.valorNumerico !== undefined ? t(`metodoNumerico.${r.metodoNumerico}`) : "";
+  if (r.pendiente) lista.push(comprobacion({ componente: "primitiva", metodo: "simbolica", resultado: "pendiente", clave: "verif.pendiente" }));
+  // 1. Primitiva: SymPy (F' − f = 0, sobre el MISMO integrando: lo garantiza consistencia.js) …
   if (s?.verificacion) {
     const v = s.verificacion;
-    if (v.simbolica) itemVerificacion("ok", "verif.residuoCero");
-    else if (v.numerica) itemVerificacion("ok", "verif.residuoNumerico", { residuo: v.residuo });
-    else itemVerificacion("bad", "verif.residuoFalla", { residuo: v.residuo });
+    if (v.simbolica) lista.push(comprobacion({ componente: "primitiva", metodo: "simbolica", resultado: "ok", clave: "verif.residuoCero" }));
+    else if (v.numerica) lista.push(comprobacion({ componente: "primitiva", metodo: "numerica", resultado: "ok", clave: "verif.residuoNumerico", datos: { residuo: v.residuo } }));
+    else lista.push(comprobacion({ componente: "primitiva", metodo: "simbolica", resultado: "falla", clave: "verif.residuoFalla", datos: { residuo: v.residuo } }));
   }
+  // … y en JavaScript, sin SymPy, derivando numéricamente la primitiva que se muestra.
   if (s?.primitivaMathjs) {
-    try {
-      const { fn } = prepararExpresion(s.primitivaMathjs, ["x"], { parametrosPermitidos: false });
-      const peor = derivadaNumericaFrenteAf(fn, r.f);
-      if (peor === null) itemVerificacion("aviso", "verif.jsSinPuntos");
-      else if (peor < 1e-6) itemVerificacion("ok", "verif.jsDerivada", { error: cientifica(peor) });
-      else itemVerificacion("bad", "verif.jsDerivadaFalla", { error: cientifica(peor) });
-    } catch {
-      itemVerificacion("aviso", "verif.jsNoEvaluable");
+    let fn = null;
+    try { fn = prepararExpresion(s.primitivaMathjs, ["x"], { parametrosPermitidos: false }).fn; } catch { /* funciones especiales */ }
+    const peor = fn ? derivadaNumericaFrenteAf(fn, r.f) : null;
+    if (!fn) lista.push(comprobacion({ componente: "primitiva", resultado: "inconclusa", clave: "verif.jsNoEvaluable", requerida: false }));
+    else if (peor === null) lista.push(comprobacion({ componente: "primitiva", resultado: "inconclusa", clave: "verif.jsSinPuntos", requerida: false }));
+    else {
+      lista.push(comprobacion({ componente: "primitiva", resultado: peor < 1e-6 ? "ok" : "falla", clave: peor < 1e-6 ? "verif.jsDerivada" : "verif.jsDerivadaFalla",
+        datos: { error: cientifica(peor) }, errorRel: peor }));
     }
   } else if (s?.primitiva) {
-    itemVerificacion("aviso", "verif.jsNoEvaluable");
+    lista.push(comprobacion({ componente: "primitiva", resultado: "inconclusa", clave: "verif.jsNoEvaluable", requerida: false }));
   }
   if (r.definida) {
+    // 2. Valor definido: el exacto de SymPy frente al numérico de JavaScript (dos caminos distintos).
     const exacto = s?.definida?.numero;
-    if (exacto !== null && exacto !== undefined && r.valorNumerico !== null && r.valorNumerico !== undefined) {
-      const dif = Math.abs(Number(exacto) - r.valorNumerico);
-      itemVerificacion(discrepancia() ? "bad" : "ok", "verif.definida", {
-        metodo: t(`metodoNumerico.${r.metodoNumerico}`), diferencia: cientifica(dif),
-      });
-    } else if (r.valorNumerico !== null && r.valorNumerico !== undefined) {
-      itemVerificacion("aviso", "verif.soloNumerica", { metodo: t(`metodoNumerico.${r.metodoNumerico}`), error: cientifica(r.errorEstimado ?? 0) });
+    const hayNumero = r.valorNumerico !== null && r.valorNumerico !== undefined;
+    if (exacto !== null && exacto !== undefined && hayNumero) {
+      const e = errores(r.valorNumerico, Number(exacto));
+      const falla = discrepancia();
+      lista.push(comprobacion({ componente: "valorDefinido", resultado: falla ? "falla" : "ok", clave: falla ? "verif.definidaFalla" : "verif.definida",
+        datos: { metodo: metodoNum, diferencia: cientifica(e.errorAbs) }, ...e }));
+    } else if (hayNumero) {
+      // Solo numérico: vale como verificación numérica si su error estimado es pequeño.
+      const relativo = (r.errorEstimado ?? Infinity) / Math.max(1, Math.abs(r.valorNumerico));
+      lista.push(comprobacion({ componente: "valorDefinido", resultado: relativo < 1e-6 ? "ok" : "inconclusa", clave: "verif.soloNumerica",
+        datos: { metodo: metodoNum, error: cientifica(r.errorEstimado ?? 0) }, errorAbs: r.errorEstimado ?? null }));
     }
-    if (s?.definida?.barrow?.coincide === false) itemVerificacion("aviso", "verif.barrow");
+    if (s?.definida?.barrow?.coincide === false) lista.push(comprobacion({ componente: "barrow", resultado: "informativa", clave: "verif.barrow" }));
+    // 3. Convergencia de las impropias: el límite de SymPy frente al criterio numérico.
     if (r.impropia && s?.definida?.encontrada) {
       const sympyDiverge = Boolean(s.definida.diverge);
       const numDiverge = r.impropia.veredicto === "diverge";
-      const decide = r.impropia.veredicto !== "dudoso";
-      itemVerificacion(!decide ? "aviso" : sympyDiverge === numDiverge ? "ok" : "bad",
-        decide ? (sympyDiverge === numDiverge ? "verif.impropiaCoincide" : "verif.impropiaDiscrepa") : "verif.impropiaDudosa");
+      if (r.impropia.veredicto === "dudoso") {
+        lista.push(comprobacion({ componente: "convergencia", resultado: "informativa", clave: "verif.impropiaDudosa" }));
+      } else {
+        lista.push(comprobacion({ componente: "convergencia", metodo: "simbolica", resultado: sympyDiverge === numDiverge ? "ok" : "falla",
+          clave: sympyDiverge === numDiverge ? "verif.impropiaCoincide" : "verif.impropiaDiscrepa" }));
+      }
     }
   }
-  if (r.errorSimbolico) itemVerificacion("aviso", "verif.sinSimbolico", { detalle: mensajeDeError(r.errorSimbolico) });
+  if (r.errorSimbolico) lista.push(comprobacion({ componente: "primitiva", resultado: "informativa", clave: "verif.sinSimbolico", datos: { detalle: mensajeDeError(r.errorSimbolico) } }));
+  return lista;
+}
+
+function pintarVerificacion() {
+  r.verif = pintarComprobaciones($("verificacion"), comprobacionesIntegral());
+  avisarEnSolucion($("panel-solucion"), r.verif);
 }
 
 // --- Código Python y exportación ---------------------------------------------------------------
