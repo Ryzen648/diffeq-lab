@@ -27,7 +27,9 @@ const listo = (async () => {
   estado({ estado: "cargando", paso: "modulos" });
   py.FS.mkdirTree("/lab");
   for (const archivo of MODULOS_PY) {
-    const respuesta = await fetch(new URL(`./py/${archivo}`, import.meta.url));
+    // Con la misma ?v= que este Worker (la pone scripts/versionar.mjs al publicar; en local, vacía):
+    // así un despliegue nuevo no usa módulos .py viejos de la caché.
+    const respuesta = await fetch(new URL(`./py/${archivo}${new URL(import.meta.url).search}`, import.meta.url));
     if (!respuesta.ok) throw new Error(`no se pudo leer ${archivo}`);
     py.FS.writeFile(`/lab/${archivo}`, await respuesta.text());
   }
