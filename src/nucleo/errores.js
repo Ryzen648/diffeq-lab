@@ -17,6 +17,16 @@ const CODIGOS_PROPIOS = [
   "limitesIguales",            // {}
   "limiteInfinitoNoAdmitido",  // { campo }
 
+  // --- Ecuaciones diferenciales (src/nucleo/edo/notacion.js) ---
+  "ecuacionVacia",             // {}
+  "variosIguales",             // {}
+  "ladoVacio",                 // {}
+  "variasDependientes",        // { lista }
+  "variasIndependientes",      // { lista }
+  "sinDerivada",               // {}
+  "noFormaNormal",             // {}
+  "nombreReservado",           // { nombre }
+
   // --- Cálculos en un Web Worker (src/workers/rpc.js) ---
   "tiempoAgotado",             // { segundos }
   "calculoCancelado",          // {}

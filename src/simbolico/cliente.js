@@ -31,3 +31,12 @@ export const cancelarSimbolico = () => trabajador.cancelar();
 export function integrarSimbolico(textoPython, a = null, b = null) {
   return trabajador.llamar("integrales.integrar", [textoPython, a, b], { tiempoMaximo: 20000 });
 }
+
+/**
+ * EDO M(x, y) + N(x, y)·y' = 0 con y(x0) = y0. M, N, x0, y0 en sintaxis de
+ * SymPy. `metodo`: "separable" | "lineal" | "bernoulli" | "exacta" | null (el
+ * primero que aplique, en ese orden).
+ */
+export function resolverEDO1Simbolico(M, N, x0, y0, metodo = null) {
+  return trabajador.llamar("edo.resolver_edo1", [M, N, x0, y0, metodo], { tiempoMaximo: 25000 });
+}
