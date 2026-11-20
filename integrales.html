@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Integrales · DiffEq Lab</title>
+<meta name="description" content="Integrales paso a paso con el método nombrado, sumas de Riemann, cuadratura numérica con su orden de convergencia e integrales impropias.">
+<meta name="author" content="Ricardo Jaico Pradinett">
+<!-- Aplica el tema guardado antes del primer pintado (ver comun/js/tema.js). -->
+<script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<link rel="stylesheet" href="comun/css/tema.css">
+<link rel="stylesheet" href="css/lab.css">
+<!-- `defer`: se ejecutan en orden, antes del módulo, sin bloquear el pintado. -->
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.2/math.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/4.3.0/plotly-cartesian.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/4.3.0/plotly-locale-es.min.js"></script>
+<script type="module" src="src/ui/paginas/integrales.js"></script>
+</head>
+<body>
+<header class="barra-sitio">
+  <a class="marca" href="index.html" data-i18n="sitio.nombre">DiffEq Lab</a>
+  <nav class="nav" data-i18n-aria-label="nav.principal">
+    <a href="index.html" data-i18n="nav.inicio"></a>
+    <a href="integrales.html" data-i18n="nav.integrales"></a>
+  </nav>
+  <button type="button" id="tema" class="boton-tema"></button>
+</header>
+<main>
+  <h1 data-i18n="integrales.titulo">Integrales</h1>
+  <p class="lead" data-i18n="integrales.entradilla"></p>
+
+  <section class="card" aria-labelledby="tituloEntrada">
+    <div class="cabecera">
+      <h2 id="tituloEntrada" data-i18n="integrales.entrada"></h2>
+      <div class="modo" role="group" data-i18n-aria-label="comun.modo">
+        <button type="button" id="modoVisual" data-i18n="comun.modo.visual" aria-pressed="false"></button>
+        <button type="button" id="modoCodigo" data-i18n="comun.modo.codigo" aria-pressed="true"></button>
+      </div>
+    </div>
+    <p id="avisoModo" class="aviso" role="status" hidden></p>
+
+    <div class="fila-formula">
+      <label for="f" class="nombre-formula">f(x) =</label>
+      <div id="campoF" class="campo-formula"></div>
+    </div>
+    <p id="errorF" class="error-fila" role="alert" hidden></p>
+
+    <div class="limites">
+      <label class="interruptor"><input type="checkbox" id="definida"> <span data-i18n="integrales.definida"></span></label>
+      <div id="camposLimites" class="campos-limites">
+        <label for="a" class="corto">a =</label><input id="a" class="campo numero" autocomplete="off" spellcheck="false">
+        <label for="b" class="corto">b =</label><input id="b" class="campo numero" autocomplete="off" spellcheck="false">
+      </div>
+      <p class="hint" data-i18n-html="integrales.limites.ayuda"></p>
+      <p id="errorLimites" class="error-fila" hidden></p>
+    </div>
+
+    <h3 data-i18n="entrada.vistaPrevia"></h3>
+    <div id="vistaPrevia" class="math vista-previa"></div>
+    <div id="clasificacion" class="etiquetas" aria-live="polite"></div>
+
+    <div id="parametros" class="parametros" hidden></div>
+
+    <div class="barra-accion">
+      <button class="primary" id="calcular" type="button" data-i18n="entrada.calcular"></button>
+      <span id="estadoSimbolico" class="estado-simbolico" role="status"></span>
+    </div>
+
+    <h3 data-i18n="entrada.ejemplos"></h3>
+    <div id="ejemplos" class="chips"></div>
+
+    <details>
+      <summary class="muted" data-i18n="entrada.opciones"></summary>
+      <div class="campos-limites">
+        <label for="xmin" class="corto" data-i18n="opciones.xmin"></label><input id="xmin" class="campo numero" autocomplete="off">
+        <label for="xmax" class="corto" data-i18n="opciones.xmax"></label><input id="xmax" class="campo numero" autocomplete="off">
+      </div>
+      <p class="hint" data-i18n="opciones.rango.ayuda"></p>
+      <h3 data-i18n="entrada.sintaxis.titulo"></h3>
+      <p class="muted" data-i18n-html="entrada.sintaxis.texto"></p>
+    </details>
+  </section>
+
+  <div id="error" class="error" role="alert" hidden></div>
+
+  <section id="resultados" aria-labelledby="tituloResultados" hidden>
+    <h2 id="tituloResultados" class="solo-lectores" data-i18n="resultado.titulo"></h2>
+    <div class="barra-resultados">
+      <span id="confianza" class="badge"></span>
+      <div class="acciones">
+        <button type="button" class="accion" id="copiarEnlace" data-i18n="exportar.enlace"></button>
+        <button type="button" class="accion" id="copiarLatex" data-i18n="exportar.latex"></button>
+        <button type="button" class="accion" id="descargarCsv" data-i18n="exportar.csv"></button>
+        <button type="button" class="accion" id="descargarPng" data-i18n="exportar.png"></button>
+        <button type="button" class="accion" id="descargarPy" data-i18n="exportar.python"></button>
+      </div>
+    </div>
+    <p id="avisoCopia" class="solo-lectores" role="status"></p>
+
+    <div class="pestanas" role="tablist" data-i18n-aria-label="resultado.titulo">
+      <button role="tab" id="tab-solucion" data-pestana="solucion" aria-controls="panel-solucion" aria-selected="true" data-i18n="pestana.solucion"></button>
+      <button role="tab" id="tab-pasos" data-pestana="pasos" aria-controls="panel-pasos" data-i18n="pestana.pasos"></button>
+      <button role="tab" id="tab-graficas" data-pestana="graficas" aria-controls="panel-graficas" data-i18n="pestana.graficas"></button>
+      <button role="tab" id="tab-numerico" data-pestana="numerico" aria-controls="panel-numerico" data-i18n="pestana.numerico"></button>
+      <button role="tab" id="tab-verificacion" data-pestana="verificacion" aria-controls="panel-verificacion" data-i18n="pestana.verificacion"></button>
+      <button role="tab" id="tab-codigo" data-pestana="codigo" aria-controls="panel-codigo" data-i18n="pestana.codigo"></button>
+    </div>
+
+    <section role="tabpanel" id="panel-solucion" aria-labelledby="tab-solucion" class="card panel" tabindex="0">
+      <div id="solucionPrimitiva" class="math"></div>
+      <p id="avisoLogaritmo" class="aviso" hidden></p>
+      <div id="solucionDefinida" class="math"></div>
+      <div id="solucionImpropia"></div>
+      <p id="solucionNota" class="muted"></p>
+    </section>
+
+    <section role="tabpanel" id="panel-pasos" aria-labelledby="tab-pasos" class="card panel" tabindex="0" hidden>
+      <p id="pasosMetodo"></p>
+      <div id="pasos"></div>
+    </section>
+
+    <section role="tabpanel" id="panel-graficas" aria-labelledby="tab-graficas" class="card panel" tabindex="0" hidden>
+      <h3 data-i18n="graficas.funcion"></h3>
+      <div id="graficaF" class="grafica" role="img" data-i18n-aria-label="graficas.funcion.aria"></div>
+      <div id="bloqueRiemann">
+        <h3 data-i18n="graficas.riemann"></h3>
+        <div class="controles">
+          <label for="reglaRiemann" data-i18n="graficas.riemann.regla"></label>
+          <select id="reglaRiemann">
+            <option value="izquierda" data-i18n="regla.izquierda"></option>
+            <option value="medio" data-i18n="regla.medio"></option>
+            <option value="derecha" data-i18n="regla.derecha"></option>
+          </select>
+          <label for="nRiemann"><span data-i18n="graficas.riemann.n"></span> <output id="nRiemannValor" for="nRiemann"></output></label>
+          <input type="range" id="nRiemann" min="1" max="100" value="10">
+        </div>
+        <div id="graficaRiemann" class="grafica" role="img" data-i18n-aria-label="graficas.riemann.aria"></div>
+        <p id="textoRiemann" class="muted" aria-live="polite"></p>
+        <h3 data-i18n="graficas.adaptativa"></h3>
+        <p class="muted" data-i18n="graficas.adaptativa.ayuda"></p>
+        <div id="graficaAdaptativa" class="grafica" role="img" data-i18n-aria-label="graficas.adaptativa.aria"></div>
+        <p id="textoAdaptativa" class="muted"></p>
+      </div>
+      <div id="bloqueTruncada" hidden>
+        <h3 data-i18n="graficas.truncada"></h3>
+        <p class="muted" data-i18n="graficas.truncada.ayuda"></p>
+        <div id="graficaTruncada" class="grafica" role="img" data-i18n-aria-label="graficas.truncada.aria"></div>
+      </div>
+    </section>
+
+    <section role="tabpanel" id="panel-numerico" aria-labelledby="tab-numerico" class="card panel" tabindex="0" hidden>
+      <p id="numericoNota" class="muted"></p>
+      <div id="bloqueConvergencia">
+        <h3 data-i18n="numerico.tabla"></h3>
+        <div class="tabla-desplazable"><table id="tablaMetodos" class="tabla"></table></div>
+        <h3 data-i18n="numerico.convergencia"></h3>
+        <p class="muted" data-i18n="numerico.convergencia.ayuda"></p>
+        <div id="graficaConvergencia" class="grafica alta" role="img" data-i18n-aria-label="numerico.convergencia.aria"></div>
+        <h3 data-i18n="numerico.evaluaciones"></h3>
+        <p class="muted" data-i18n="numerico.evaluaciones.ayuda"></p>
+        <div id="graficaEvaluaciones" class="grafica alta" role="img" data-i18n-aria-label="numerico.evaluaciones.aria"></div>
+        <h3 data-i18n="numerico.gauss"></h3>
+        <p class="muted" data-i18n="numerico.gauss.ayuda"></p>
+        <div id="graficaGauss" class="grafica" role="img" data-i18n-aria-label="numerico.gauss.aria"></div>
+      </div>
+    </section>
+
+    <section role="tabpanel" id="panel-verificacion" aria-labelledby="tab-verificacion" class="card panel" tabindex="0" hidden>
+      <ul id="verificacion" class="verificacion"></ul>
+    </section>
+
+    <section role="tabpanel" id="panel-codigo" aria-labelledby="tab-codigo" class="card panel" tabindex="0" hidden>
+      <p class="muted" data-i18n="codigo.ayuda"></p>
+      <div class="acciones">
+        <button type="button" class="accion" id="copiarPy" data-i18n="codigo.copiar"></button>
+      </div>
+      <pre class="codigo"><code id="codigoPython"></code></pre>
+    </section>
+  </section>
+
+  <footer data-i18n-html="pie.texto"></footer>
+</main>
+</body>
+</html>
