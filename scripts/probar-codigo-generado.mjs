@@ -31,6 +31,11 @@ for (const archivo of readdirSync(carpeta).filter((f) => f.endsWith(".py")).sort
     if (esperado.tipo === "integral" && esperado.diverge) {
       ok = ["oo", "-oo"].includes(resultado.exacto);
       detalle = `exacto = ${resultado.exacto}`;
+    } else if (esperado.tipo === "plano") {
+      const valor = [resultado.x_final, resultado.y_final];
+      const dif = Math.max(...valor.map((v, k) => Math.abs(v - esperado.valor[k])));
+      ok = dif <= TOLERANCIA * Math.max(1, ...esperado.valor.map(Math.abs));
+      detalle = `Python (${valor.join(", ")}) | página (${esperado.valor.join(", ")}) | diferencia ${dif.toExponential(2)}`;
     } else {
       const valor = esperado.tipo === "integral" ? resultado.quad : resultado.y_final;
       const dif = Math.abs(valor - esperado.valor);

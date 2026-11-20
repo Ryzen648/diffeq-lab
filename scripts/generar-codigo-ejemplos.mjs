@@ -9,7 +9,7 @@ import "../tests/preparar.mjs";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 
-import { analizarFuncion } from "../comun/js/entrada/analizar.js";
+import { analizarFuncion, variablesDe } from "../comun/js/entrada/analizar.js";
 import { math } from "../comun/js/mathjs.js";
 import { EJEMPLOS, disponible } from "../src/ejemplos.js";
 import { prepararExpresion, aJS, compilarFuente } from "../src/nucleo/expresion.js";
@@ -20,12 +20,19 @@ import { codigoIntegral } from "../src/nucleo/codigo/integrales.js";
 import { codigoEDO } from "../src/nucleo/codigo/edo.js";
 import { leerEcuacion, formaNormal } from "../src/nucleo/edo/notacion.js";
 import { dormandPrince } from "../src/nucleo/edo/dormand-prince.js";
+import { codigoPlano } from "../src/nucleo/codigo/edo2.js";
+import { leerOrden2, leerSistema } from "../src/nucleo/edo/plano.js";
+import { dormandPrinceSistema } from "../src/nucleo/edo/sistemas.js";
+import { buscarEquilibrios, jacobianoNumerico } from "../src/nucleo/edo/equilibrios.js";
 
 const carpeta = resolve(process.argv[2] ?? "codigo-generado");
 
 // Método simbólico que elige la página para cada ejemplo (el primero que aplica,
 // comprobado en el navegador), para que también se ejecute el bloque de dsolve.
 const METODO_EJEMPLO = { logistica: "separable", enfriamiento: "separable", lineal: "lineal", bernoulli: "bernoulli", exacta: "exacta", rigidez: "lineal", riccati: null };
+// Plano de fase: los ejemplos lineales también ejecutan el bloque de dsolve
+// (los no lineales no lo tienen: la página no llama a SymPy con ellos).
+const SIMBOLICO_PLANO = { amortiguado: "orden2", resonancia: "orden2", silla: "sistema" };
 mkdirSync(carpeta, { recursive: true });
 
 const sustituir = (nodo, valores) => nodo.transform((n, ruta) => (n.isSymbolNode && ruta !== "fn" && n.name in valores
@@ -56,6 +63,29 @@ for (const e of [...EJEMPLOS.filter(disponible), ...CASOS_EXTRA]) {
       ? (analisis.veredicto === "diverge" ? null : analisis.numerico.valor)
       : simpsonAdaptativo(fn, Math.min(a, b), Math.max(a, b), { tol: 1e-13 }).valor * (a < b ? 1 : -1);
     esperados[e.id] = { tipo: "integral", valor, diverge: analisis.veredicto === "diverge" };
+  } else if (e.modulo === "edo2") {
+    const { tipo, ecuacion, f: textoF, g: textoG, t0, x0, y0, tf, xmin, xmax, ymin, ymax, parametros = {} } = e.datos;
+    const p = tipo === "sistema" ? leerSistema(textoF, textoG) : leerOrden2(ecuacion);
+    const [f, g] = [p.f, p.g].map((n) => sustituir(n, parametros));
+    const [fn, gn] = [f, g].map((n) => compilarFuente(aJS(n), ["t", "x", "y"]));
+    const F = (t, [x, y]) => [fn(t, x, y), gn(t, x, y)];
+    const [vt0, vx0, vy0, vtf] = [t0, x0, y0, tf].map((v) => leerNumero(v, ""));
+    // Los mismos equilibrios que muestra la página (sistemas autónomos con ventana).
+    let equilibrios = [];
+    const autonomo = ![f, g].some((n) => variablesDe(n).has("t"));
+    if (autonomo && xmin !== undefined) {
+      const Fxy = (x, y) => F(vt0, [x, y]);
+      const ventana = [[xmin, xmax], [ymin, ymax]].map((par) => par.map((v) => leerNumero(v, "")));
+      equilibrios = buscarEquilibrios(Fxy, (x, y) => jacobianoNumerico(Fxy, x, y), ...ventana).equilibrios;
+    }
+    const simbolico = SIMBOLICO_PLANO[e.id] === "orden2" ? { tipo: "orden2", F: sustituir(p.ec.F, parametros) }
+      : SIMBOLICO_PLANO[e.id] === "sistema" ? { tipo: "sistema" } : null;
+    codigo = codigoPlano({
+      f, g, textoOriginal: tipo === "sistema" ? `x' = ${textoF}, y' = ${textoG}` : ecuacion, nombres: p.nombres,
+      t0: vt0, Y0: [vx0, vy0], tf: vtf, equilibrios, simbolico,
+    });
+    const ref = dormandPrinceSistema(F, vt0, [vx0, vy0], vtf, { rtol: 1e-12, atol: 1e-14 });
+    esperados[e.id] = { tipo: "plano", valor: ref.Ys.at(-1) };
   } else {
     const { ecuacion, x0, y0, xf: textoXf, parametros = {} } = e.datos;
     const ec = leerEcuacion(ecuacion);

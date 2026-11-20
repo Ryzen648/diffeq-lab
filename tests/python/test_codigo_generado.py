@@ -48,6 +48,12 @@ def test_el_codigo_generado_da_lo_mismo_que_la_pagina(ejemplo):
             assert resultado["exacto"] in ("oo", "-oo"), resultado
             return
         valor = resultado["quad"]
+    elif esperado["tipo"] == "plano":
+        # Las dos componentes en el tiempo final, con la escala del vector.
+        escala = max(1.0, *(abs(v) for v in esperado["valor"]))
+        for clave, v in zip(("x_final", "y_final"), esperado["valor"]):
+            assert abs(resultado[clave] - v) <= TOLERANCIA * escala, (clave, resultado[clave], v)
+        return
     else:
         valor = resultado["y_final"]
     escala = max(1.0, abs(esperado["valor"]))
