@@ -498,9 +498,10 @@ export default {
   "verif.edoNumerica": "Comprobación independiente (JavaScript, sin SymPy): la solución exacta y Dormand–Prince con tolerancia 10⁻¹² difieren como mucho en {error} (relativo).",
   "verif.edoImplicita": "Comprobación independiente: a lo largo de la solución numérica, $F(x, y(x))$ se mantiene igual a la constante (desviación máxima {error}).",
   "verif.edoSoloNumerica": "No hay solución simbólica con la que comparar; queda la comprobación cruzada entre métodos numéricos.",
-  "verif.edoCruzada": "RK4 con 2000 pasos y Dormand–Prince con tolerancia 10⁻¹² coinciden en x = {x} con una diferencia de {diferencia}.",
-  "verif.edoCruzadaFalla": "RK4 con 2000 pasos y Dormand–Prince con tolerancia 10⁻¹² NO coinciden en x = {x}: difieren en {diferencia}. La solución numérica no es fiable ahí (rigidez, singularidad cercana o sensibilidad extrema).",
-  "verif.edoCruzadaSinRK4": "RK4 con 2000 pasos no llegó hasta x = {x} (explota o se sale del dominio), así que no se pudo contrastar con Dormand–Prince.",
+  "verif.contraste.ok": "RK4 con {n2} pasos y Dormand–Prince con tolerancia 10⁻¹² coinciden en {en}: diferencia relativa {diferencia}.",
+  "verif.contraste.falla": "RK4 con {n2} pasos ya convergió (su error estimado es {errorRK4}) y aun así NO coincide con Dormand–Prince en {en}: difieren en {diferencia} (relativo). La solución numérica no es fiable ahí.",
+  "verif.contraste.noConverge": "RK4 con {n} y {n2} pasos todavía no ha convergido en {en} (error estimado {errorRK4}, frente a una diferencia de {diferencia} con Dormand–Prince): no sirve para contrastar la referencia. Pasa en problemas rígidos o con cambios muy rápidos.",
+  "verif.contraste.sinRK4": "RK4 de paso fijo no llegó hasta {en} (explota o se sale del dominio), así que no se pudo contrastar con Dormand–Prince.",
   "verif.definidaFalla": "Valor exacto (SymPy) frente a {metodo} (JavaScript): NO coinciden, difieren en {diferencia}.",
 
   // --- Ejemplos (nombres) ---
@@ -683,7 +684,6 @@ export default {
   "ejemplo.vanDerPolRigido": "Van der Pol rígido (μ = 20)",
 
   "verif.edo2Residuo": "Sustituyendo la solución en la ecuación (SymPy), el residuo se simplifica exactamente a $0$.",
-  "verif.edo2Cruzada": "RK4 con 4000 pasos y Dormand–Prince con tolerancia 10⁻¹² coinciden en {t} con una diferencia relativa de {diferencia}.",
   "verif.edo2Equilibrios": "En los equilibrios encontrados ({n}), las dos derivadas valen 0 (mayor residuo: {residuo}).",
   "verif.edo2Jacobiano": "El jacobiano simbólico (math.js) coincide con el de diferencias centradas en cada equilibrio (mayor diferencia relativa: {error}).",
   "verif.edo2Conservada": "H se conserva a lo largo de la referencia fina (desviación relativa máxima {error}).",

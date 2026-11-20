@@ -2,7 +2,7 @@
 // src/nucleo/verificacion.js para los estados). Cada página solo decide QUÉ
 // comprueba; cómo se muestra y qué estado resulta es igual en todas.
 
-import { estadoGlobal, componentesFallidos } from "../nucleo/verificacion.js";
+import { estadoGlobal, componentesFallidos, comprobacion } from "../nucleo/verificacion.js";
 import { t } from "../i18n/index.js";
 import { crear } from "./pagina.js";
 import { textoConFormulas } from "./pasos.js";
@@ -61,4 +61,16 @@ export function avisarEnSolucion(panel, { estado, fallidos }) {
     panel.prepend(aviso);
   }
   aviso.textContent = t("verif.avisoSolucion", { componentes: nombresComponentes(fallidos) });
+}
+
+/**
+ * Resultado de contrasteRK4 (src/nucleo/edo/contraste.js) -> comprobación de la
+ * solución numérica. `en`: dónde se compara, ya escrito («x = 3», «t = 40»);
+ * `n`: los pasos del RK4 más grueso (el fino usa 2n).
+ */
+export function comprobacionContraste(c, en, n) {
+  const datos = { en, n2: String(2 * n), n: String(n), diferencia: c.errorRel === null ? "—" : cientifica(c.errorRel), errorRK4: c.errorRK4 === null ? "—" : cientifica(c.errorRK4) };
+  const clave = c.resultado === "ok" ? "verif.contraste.ok" : c.resultado === "falla" ? "verif.contraste.falla"
+    : c.errorAbs === null ? "verif.contraste.sinRK4" : "verif.contraste.noConverge";
+  return comprobacion({ componente: "solucionNumerica", resultado: c.resultado, clave, datos, errorAbs: c.errorAbs, errorRel: c.errorRel });
 }

@@ -22,7 +22,7 @@ import { exigirPrimerOrden, leerProblema, migrarEstadoAntiguo } from "../../nucl
 import { explorarTramo } from "../../nucleo/edo/singularidad.js";
 import { leerEcuacion, formaNormal, ecuacionTex, latexEcuacionACodigo } from "../../nucleo/edo/notacion.js";
 import { clasificarEDO1 } from "../../nucleo/edo/clasificar.js";
-import { integrarConPaso, METODOS_PASO_FIJO } from "../../nucleo/edo/paso-fijo.js";
+import { integrarConPaso, METODOS_PASO_FIJO, comoSistema } from "../../nucleo/edo/paso-fijo.js";
 import { dormandPrince, interpolarHermite, evaluarEn } from "../../nucleo/edo/dormand-prince.js";
 import { integrarImplicito } from "../../nucleo/edo/implicitos.js";
 import { campoDirecciones } from "../../nucleo/edo/campo.js";
@@ -33,7 +33,8 @@ import { resolverEDO1Simbolico, alEstadoSimbolico } from "../../simbolico/client
 import { crearTrabajador } from "../../workers/rpc.js";
 import { t, mensajeDeError } from "../../i18n/index.js";
 import { comprobacion, estadoGlobal, componentesFallidos, estaVerificado, errores } from "../../nucleo/verificacion.js";
-import { pintarComprobaciones, avisarEnSolucion } from "../verificacion.js";
+import { pintarComprobaciones, avisarEnSolucion, comprobacionContraste } from "../verificacion.js";
+import { contrasteRK4 } from "../../nucleo/edo/contraste.js";
 import { $, crear, pintarTex, iniciarPagina } from "../pagina.js";
 import { crearCampoFormula, conectarSelectorModo } from "../campo-formula.js";
 import { conectarPestanas } from "../pestanas.js";
@@ -757,18 +758,8 @@ function comprobacionesEDO1() {
   } else if (!r.pendiente) {
     lista.push(comprobacion({ componente: "solucionExacta", resultado: "informativa", clave: "verif.edoSoloNumerica" }));
   }
-  // 3. La solución numérica: RK4 y Dormand–Prince, dos métodos distintos, deben coincidir.
-  const rk4 = integrarConPaso("rk4", r.f, r.x0, r.y0, r.xf, Math.abs(r.xf - r.x0) / 2000);
-  const ref = r.referencia.enX(r.xf);
-  if (!rk4.detenido && Number.isFinite(ref)) {
-    const e = errores(rk4.ys.at(-1), ref);
-    const ok = e.errorRel < 1e-6;
-    lista.push(comprobacion({ componente: "solucionNumerica", resultado: ok ? "ok" : "falla", clave: ok ? "verif.edoCruzada" : "verif.edoCruzadaFalla",
-      datos: { diferencia: cientifica(e.errorAbs), x: cifras(r.xf, 6) }, ...e }));
-  } else {
-    // RK4 de paso fijo no llegó (p. ej. rigidez extrema): la comparación no se pudo hacer.
-    lista.push(comprobacion({ componente: "solucionNumerica", resultado: "inconclusa", clave: "verif.edoCruzadaSinRK4", datos: { x: cifras(r.xf, 6) } }));
-  }
+  // 3. La solución numérica: RK4 (con 2000 y 4000 pasos) frente a Dormand–Prince fino.
+  lista.push(comprobacionContraste(contrasteRK4(comoSistema(r.f), r.x0, [r.y0], r.xf, [r.referencia.enX(r.xf)], { n: 2000 }), `${r.edo.ec.independiente} = ${cifras(r.xf, 6)}`, 2000));
   if (r.errorSimbolico) lista.push(comprobacion({ componente: "ecuacion", resultado: "informativa", clave: "verif.sinSimbolico", datos: { detalle: mensajeDeError(r.errorSimbolico) } }));
   return lista;
 }

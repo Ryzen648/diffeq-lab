@@ -37,6 +37,9 @@ import { EJEMPLOS, ejemplo as buscarEjemplo } from "../../ejemplos.js";
 import { resolverOrden2Simbolico, resolverSistemaSimbolico, alEstadoSimbolico } from "../../simbolico/cliente.js";
 import { crearTrabajador } from "../../workers/rpc.js";
 import { t, mensajeDeError } from "../../i18n/index.js";
+import { comprobacion, estadoGlobal, componentesFallidos, estaVerificado } from "../../nucleo/verificacion.js";
+import { pintarComprobaciones, avisarEnSolucion, comprobacionContraste } from "../verificacion.js";
+import { contrasteRK4 } from "../../nucleo/edo/contraste.js";
 import { $, crear, pintarTex, iniciarPagina } from "../pagina.js";
 import { crearCampoFormula, conectarSelectorModo } from "../campo-formula.js";
 import { conectarPestanas } from "../pestanas.js";
@@ -492,15 +495,18 @@ function pintarParada() {
 
 function pintarConfianza() {
   const s = r.simbolico;
-  const d = diferenciaExacta();
+  // El estado sale de las mismas comprobaciones que la pestaña Verificación.
+  const lista = comprobacionesEDO2();
+  const estado = estadoGlobal(lista);
   let clase = "aviso";
   let texto;
-  if (d !== null && d > 1e-6) {
+  if (estado === "fallida") {
     clase = "bad";
-    texto = t("confianza.discrepancia");
+    texto = t("confianza.fallida", { componentes: componentesFallidos(lista).map((c) => t(`verif.componente.${c}`)).join(", ") });
   } else if (s?.particular) {
-    clase = "ok";
     texto = t("confianza.edoExacta", { metodo: t(`metodoSimb.${s.metodo}`) });
+    if (estaVerificado(estado)) clase = "ok";
+    else if (estado === "parcial") texto = t("confianza.parcial", { base: texto });
   } else {
     texto = t("confianza.edoNumerica", { tol: cientifica(1e-12) });
   }
@@ -972,52 +978,48 @@ function conservaH() {
 
 // --- Verificación -----------------------------------------------------------------------------------------
 
-function itemVerificacion(estado, clave, datos = {}) {
-  const li = crear("li", `verif ${estado}`);
-  li.append(crear("span", "verif-icono", { ok: "✓", bad: "✗", aviso: "!", pendiente: "…" }[estado]));
-  const texto = crear("span");
-  textoConFormulas(texto, t(clave, datos));
-  li.append(texto);
-  $("verificacion").append(li);
-}
-
-function pintarVerificacion() {
-  $("verificacion").replaceChildren();
+/** Comprobaciones de lo que se muestra (capa compartida: src/nucleo/verificacion.js). */
+function comprobacionesEDO2() {
+  const lista = [];
   const s = r.simbolico;
-  if (r.pendiente) itemVerificacion("pendiente", "verif.pendiente");
+  if (r.pendiente) lista.push(comprobacion({ componente: "ecuacion", metodo: "simbolica", resultado: "pendiente", clave: "verif.pendiente" }));
   const v = s?.verificacion;
   if (v) {
-    itemVerificacion(v.simbolica ? "ok" : "bad", v.simbolica ? "verif.edo2Residuo" : "verif.edoResiduoFalla", { residuo: v.residuo });
-    itemVerificacion(v.ci ? "ok" : "bad", v.ci ? "verif.edoCI" : "verif.edoCIFalla");
+    lista.push(comprobacion({ componente: "ecuacion", metodo: "simbolica", resultado: v.simbolica ? "ok" : "falla",
+      clave: v.simbolica ? "verif.edo2Residuo" : "verif.edoResiduoFalla", datos: { residuo: v.residuo } }));
+    lista.push(comprobacion({ componente: "condicionInicial", metodo: "simbolica", resultado: v.ci ? "ok" : "falla", clave: v.ci ? "verif.edoCI" : "verif.edoCIFalla" }));
   }
   const d = diferenciaExacta();
-  if (d !== null) itemVerificacion(d < 1e-6 ? "ok" : "bad", "verif.edoNumerica", { error: cientifica(d) });
-  else if (!r.pendiente) itemVerificacion("aviso", "verif.edoSoloNumerica");
+  if (d !== null) lista.push(comprobacion({ componente: "solucionExacta", resultado: d < 1e-6 ? "ok" : "falla", clave: "verif.edoNumerica", datos: { error: cientifica(d) }, errorRel: d }));
+  else if (!r.pendiente) lista.push(comprobacion({ componente: "solucionExacta", resultado: "informativa", clave: "verif.edoSoloNumerica" }));
 
-  // RK4 con muchos pasos frente a Dormand–Prince fino: dos métodos distintos deben coincidir.
-  const rk4 = integrarSistemaConPaso("rk4", r.p.F, r.t0, r.Y0, r.tf, Math.abs(r.tf - r.t0) / 4000);
-  const ref = r.referencia.enT(r.tf);
-  if (!rk4.detenido) {
-    const dif = normaMax(rk4.Ys.at(-1).map((y, k) => y - ref[k])) / Math.max(1, normaMax(ref));
-    itemVerificacion(dif < 1e-6 ? "ok" : "aviso", "verif.edo2Cruzada", { diferencia: cientifica(dif), t: `${r.p.nombres.t} = ${cifras(r.tf, 6)}` });
-  }
+  // RK4 (con 4000 y 8000 pasos) frente a Dormand–Prince fino.
+  lista.push(comprobacionContraste(contrasteRK4(r.p.F, r.t0, r.Y0, r.tf, r.referencia.enT(r.tf), { n: 4000 }), `${r.p.nombres.t} = ${cifras(r.tf, 6)}`, 4000));
   if (r.equilibrios.length) {
     const residuo = Math.max(...r.equilibrios.map((e) => normaMax(r.Fxy(e.x, e.y))));
-    itemVerificacion(residuo < 1e-8 ? "ok" : "aviso", "verif.edo2Equilibrios", { n: r.equilibrios.length, residuo: cientifica(residuo) });
+    lista.push(comprobacion({ componente: "equilibrios", resultado: residuo < 1e-8 ? "ok" : "falla", clave: "verif.edo2Equilibrios",
+      datos: { n: r.equilibrios.length, residuo: cientifica(residuo) }, errorAbs: residuo }));
     if (r.jacobianoSimbolico) {
       // Jacobiano simbólico (math.js) frente a diferencias centradas.
       const peor = Math.max(...r.equilibrios.map((e) => {
         const Jn = jacobianoNumerico(r.Fxy, e.x, e.y);
         return Math.max(...e.J.flat().map((a, k) => Math.abs(a - Jn.flat()[k]) / Math.max(1, Math.abs(a))));
       }));
-      itemVerificacion(peor < 1e-5 ? "ok" : "aviso", "verif.edo2Jacobiano", { error: cientifica(peor) });
+      lista.push(comprobacion({ componente: "jacobiano", resultado: peor < 1e-5 ? "ok" : "falla", clave: "verif.edo2Jacobiano", datos: { error: cientifica(peor) }, errorRel: peor }));
     }
   }
   if (r.H) {
+    // H la escribe el usuario: si no se conserva, es un dato sobre su H, no un fallo de la solución.
     const c = conservaH();
-    itemVerificacion(c.conserva ? "ok" : "aviso", c.conserva ? "verif.edo2Conservada" : "verif.edo2NoConservada", { error: cientifica(c.peor) });
+    lista.push(comprobacion({ componente: "conservada", resultado: "informativa", clave: c.conserva ? "verif.edo2Conservada" : "verif.edo2NoConservada", datos: { error: cientifica(c.peor) } }));
   }
-  if (r.errorSimbolico) itemVerificacion("aviso", "verif.sinSimbolico", { detalle: mensajeDeError(r.errorSimbolico) });
+  if (r.errorSimbolico) lista.push(comprobacion({ componente: "ecuacion", resultado: "informativa", clave: "verif.sinSimbolico", datos: { detalle: mensajeDeError(r.errorSimbolico) } }));
+  return lista;
+}
+
+function pintarVerificacion() {
+  r.verif = pintarComprobaciones($("verificacion"), comprobacionesEDO2());
+  avisarEnSolucion($("panel-solucion"), r.verif);
 }
 
 // --- Código y exportación ----------------------------------------------------------------------------------
