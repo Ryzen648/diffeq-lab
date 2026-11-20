@@ -31,8 +31,17 @@ mkdirSync(carpeta, { recursive: true });
 const sustituir = (nodo, valores) => nodo.transform((n, ruta) => (n.isSymbolNode && ruta !== "fn" && n.name in valores
   ? new math.ConstantNode(valores[n.name]) : n));
 
+// Casos que no están en la biblioteca pero cuyo código también debe funcionar:
+// integración hacia atrás (x final < x0). y' = y, y(0) = 1 hasta x = −1 ⇒ e⁻¹.
+const CASOS_EXTRA = [
+  { id: "atras", modulo: "edo1", datos: { ecuacion: "y' = y", x0: "0", y0: "1", xf: "-1" } },
+  { id: "atrasLineal", modulo: "edo1", datos: { ecuacion: "y' + 2*y = exp(x)", x0: "1", y0: "2", xf: "-0.5" } },
+];
+METODO_EJEMPLO.atras = "separable";
+METODO_EJEMPLO.atrasLineal = "lineal";
+
 const esperados = {};
-for (const e of EJEMPLOS.filter(disponible)) {
+for (const e of [...EJEMPLOS.filter(disponible), ...CASOS_EXTRA]) {
   let codigo;
   if (e.modulo === "integrales") {
     const { f: texto, a: ta, b: tb } = e.datos;
@@ -48,13 +57,12 @@ for (const e of EJEMPLOS.filter(disponible)) {
       : simpsonAdaptativo(fn, Math.min(a, b), Math.max(a, b), { tol: 1e-13 }).valor * (a < b ? 1 : -1);
     esperados[e.id] = { tipo: "integral", valor, diverge: analisis.veredicto === "diverge" };
   } else {
-    const { ecuacion, x0, y0, xmin, xmax, parametros = {} } = e.datos;
+    const { ecuacion, x0, y0, xf: textoXf, parametros = {} } = e.datos;
     const ec = leerEcuacion(ecuacion);
     const { f, M, N } = formaNormal(ec.F);
     const fSust = sustituir(f, parametros);
     const fn = compilarFuente(aJS(fSust), ["x", "y"]);
-    const [vx0, vy0, vxmax] = [x0, y0, xmax].map(Number);
-    const xf = vxmax > vx0 ? vxmax : Number(xmin);
+    const [vx0, vy0, xf] = [x0, y0, textoXf].map(Number); // xf < x0: hacia atrás
     codigo = codigoEDO({
       f: fSust, M: sustituir(M, parametros), N: sustituir(N, parametros),
       textoOriginal: ecuacion, x0: vx0, y0: vy0, xf, metodo: METODO_EJEMPLO[e.id] ?? null,
