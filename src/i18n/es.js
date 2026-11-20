@@ -17,6 +17,15 @@ export default {
     "Parte de una serie con la <a href=\"https://ryzen648.github.io/gradientes-jacobianos/\">calculadora de gradientes y jacobianos</a>.",
   "error.librerias": "No se pudieron cargar las librerías (math.js, KaTeX o Plotly). Revisa tu conexión y recarga la página.",
 
+  // --- Errores del núcleo (src/nucleo/errores.js) ---
+  "error.variableNoPermitida": "En la función {indice} aparece «{nombre}», pero aquí solo se admiten estas variables: {permitidas}.",
+  "error.numeroInvalido": "No entiendo «{texto}» como valor de {campo}. Escribe un número o una expresión como pi/2 o sqrt(2).",
+  "error.limitesIguales": "Los dos límites de integración son iguales: la integral vale 0. Cambia uno de los dos.",
+  "error.limiteInfinitoNoAdmitido": "El valor de {campo} no puede ser infinito aquí.",
+  "error.integrandoNoFinito": "El integrando no da un número finito en x = {x}. Si es una singularidad en un extremo, trátala como integral impropia.",
+  "error.subintervalosInvalidos": "El número de subintervalos debe ser un entero mayor o igual que {minimo} (llegó {n}).",
+  "error.simpsonImpar": "La regla de Simpson necesita un número par de subintervalos (llegó {n}): agrupa los subintervalos de dos en dos.",
+
   // --- Portada ---
   "inicio.entradilla":
     "Un laboratorio interactivo de integrales y ecuaciones diferenciales: no solo la respuesta, " +

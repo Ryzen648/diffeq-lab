@@ -21,6 +21,25 @@ test("cada ejemplo tiene nombre y los disponibles tienen datos", () => {
   }
 });
 
+test("cada código de error del núcleo tiene texto y se lanza en algún sitio", async () => {
+  const { CODIGOS } = await import("../src/nucleo/errores.js");
+  const existentes = new Set(claves("es"));
+  const fuentes = [];
+  const recorrer = (carpeta) => {
+    for (const e of readdirSync(new URL(carpeta, import.meta.url), { withFileTypes: true })) {
+      if (e.isDirectory()) recorrer(`${carpeta}${e.name}/`);
+      else if (e.name.endsWith(".js") && e.name !== "errores.js") fuentes.push(leer(`${carpeta}${e.name}`));
+    }
+  };
+  recorrer("../src/nucleo/");
+  recorrer("../comun/js/entrada/");
+  const todo = fuentes.join("\n");
+  for (const codigo of CODIGOS) {
+    assert.ok(existentes.has(`error.${codigo}`), `falta el texto de error.${codigo}`);
+    assert.ok(todo.includes(`"${codigo}"`), `el código ${codigo} no se lanza en ningún sitio`);
+  }
+});
+
 test("el inglés solo usa claves que existen en español", () => {
   for (const clave of Object.keys(en)) assert.ok(clave in es, `en.js tiene una clave que no está en es.js: ${clave}`);
 });
