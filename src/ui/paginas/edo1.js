@@ -13,11 +13,13 @@
 import { math, mathDisponible } from "../../../comun/js/mathjs.js";
 import { analizarFuncion } from "../../../comun/js/entrada/analizar.js";
 import { latexACodigo } from "../../../comun/js/entrada/latex-a-codigo.js";
+import { expresionTex } from "../../../comun/js/entrada/impresion.js";
 import { llevarAlResultado } from "../../../comun/js/teclado-virtual.js";
 import { aJS, compilarFuente, prepararExpresion } from "../../nucleo/expresion.js";
 import { leerNumero } from "../../nucleo/numeros.js";
 import { aPython } from "../../nucleo/python.js";
-import { exigirPrimerOrden, leerProblema } from "../../nucleo/edo/problema.js";
+import { exigirPrimerOrden, leerProblema, migrarEstadoAntiguo } from "../../nucleo/edo/problema.js";
+import { explorarTramo } from "../../nucleo/edo/singularidad.js";
 import { leerEcuacion, formaNormal, ecuacionTex, latexEcuacionACodigo } from "../../nucleo/edo/notacion.js";
 import { clasificarEDO1 } from "../../nucleo/edo/clasificar.js";
 import { integrarConPaso, METODOS_PASO_FIJO } from "../../nucleo/edo/paso-fijo.js";
@@ -60,13 +62,13 @@ const trabajadorNumerico = crearTrabajador(new URL("../../workers/numerico.worke
 
 const cifras = (v, n = 10) => (Number.isFinite(v) ? String(Number(v.toPrecision(n))) : String(v));
 const cientifica = (v) => (v === 0 ? "0" : v.toExponential(2));
-const subindice0 = (letra) => `${letra}₀ =`;
+const subindice0 = (letra) => `${letra}₀`;
 
 function leerEntrada() {
   return {
     ecuacion: campo.codigo(),
     x0: $("x0").value.trim(), y0: $("y0").value.trim(),
-    xmin: $("xmin").value.trim(), xmax: $("xmax").value.trim(),
+    xf: $("xf").value.trim(), desde: $("desde").value.trim(),
     h: $("paso").value.trim(), tol: $("tolerancia").value.trim(),
     metodoSimbolico: $("metodoSimbolico").value,
     metodos: [...document.querySelectorAll('input[name="metodo"]:checked')].map((c) => c.value),
@@ -96,7 +98,7 @@ function prepararCalculo() {
   const entrada = leerEntrada();
   const edo = leerEDO(entrada.ecuacion);
   const { independiente: ind, dependiente: dep } = edo.ec;
-  const datos = leerProblema(entrada, { x0: `${ind}₀`, y0: `${dep}₀`, xmin: t("edo1.xmin"), xmax: t("edo1.xmax") });
+  const datos = leerProblema(entrada, { x0: `${ind}₀`, y0: `${dep}₀`, xf: `«${t("edo1.hasta")}»`, desde: `«${t("edo1.desde")}»` });
   return { entrada, edo, ...datos };
 }
 
@@ -131,6 +133,7 @@ function refrescarVivo() {
   }
   $("etiquetaX0").textContent = subindice0(ec.independiente);
   $("etiquetaY0").textContent = subindice0(ec.dependiente);
+  $("etiquetaXf").textContent = t("edo1.hasta.var", { var: ec.independiente });
   chip(t("tipo.orden", { orden: ec.orden }));
   if (ec.orden > 1) {
     chip(t("tipo.proximamente", { fase: 2 }), "aviso");
@@ -163,8 +166,10 @@ function refrescarVivo() {
   if (c.autonoma) chip(t("tipo.autonoma"));
   if (!c.separable && !c.lineal && !c.bernoulli && !c.exacta) chip(t("tipo.sinMetodo"), "aviso");
   if (ec.parametros.length) chip(t("clase.parametros", { lista: ec.parametros.join(", ") }));
-  const { x0, y0 } = leerEntrada();
-  pintarTex($("vistaPrevia"), `${ecuacionTex(ec)}, \\quad ${ec.dependiente}(${x0 || "x_0"}) = ${y0 || "y_0"}`);
+  const { x0, y0, xf } = leerEntrada();
+  const ind = ec.independiente;
+  const inicio = x0 || `${ind}_0`;
+  pintarTex($("vistaPrevia"), `${ecuacionTex(ec)}, \\quad ${ec.dependiente}(${inicio}) = ${y0 || "y_0"}, \\quad ${ind}: ${inicio} \\to ${xf || `${ind}_f`}`);
 }
 
 function programarVivo() {
@@ -254,13 +259,37 @@ function calcular({ soloNumerico = false, desdeUsuario = false } = {}) {
     mostrarError(err);
     return;
   }
+  const { edo, x0, y0, xf, ventana, h, tol, entrada } = datos;
+  const f = edo.fn;
+
+  // Antes de nada, la referencia fina explora cada sentido desde x0. Si la
+  // solución deja de existir (singularidad, explosión, fuera de dominio), ese
+  // lado se recorta antes de la parada para TODOS los métodos: los de paso
+  // fijo cruzarían la singularidad sin darse cuenta (ver singularidad.js).
+  let [xmin, xmax] = ventana;
+  const paradas = [];
+  try {
+    for (const lado of [1, -1]) {
+      const extremo = lado > 0 ? xmax : xmin;
+      if (extremo === x0) continue;
+      const e = explorarTramo({ f, M: edo.Mfn, N: edo.Nfn }, x0, y0, extremo);
+      if (!e.parada) continue;
+      paradas.push({ ...e.parada, lado, pedido: extremo, corte: e.extremo });
+      if (lado > 0) xmax = e.extremo; else xmin = e.extremo;
+    }
+  } catch (err) {
+    mostrarError(err);
+    return;
+  }
+
   $("error").hidden = true;
   const id = ++numeroCalculo;
-  const { edo, x0, y0, xmin, xmax, h, tol, entrada } = datos;
-  const f = edo.fn;
-  r = { id, ...datos, f, simbolico: null, pendiente: true, errorSimbolico: null, estudio: null };
+  r = { id, ...datos, xmin, xmax, paradas, f, simbolico: null, pendiente: true, errorSimbolico: null, estudio: null };
+  // x final efectivo: el pedido, o el corte si la solución no llega hasta él.
+  r.xfPedido = xf;
+  r.xf = xf > x0 ? xmax : xmin;
 
-  // Referencia de alta precisión y métodos elegidos.
+  // Referencia de alta precisión y métodos elegidos, en la ventana ya recortada.
   r.referencia = dopriEnRango(f, x0, y0, xmin, xmax, { rtol: 1e-12, atol: 1e-14 });
   r.metodos = {};
   for (const m of entrada.metodos) {
@@ -270,7 +299,6 @@ function calcular({ soloNumerico = false, desdeUsuario = false } = {}) {
   }
   r.dopriUsuario = entrada.metodos.includes("dopri") ? dopriEnRango(f, x0, y0, xmin, xmax, { rtol: tol, atol: tol * 1e-3 }) : null;
   r.lambda = estimarLambda(f, r.referencia);
-  r.xf = xmax > x0 ? xmax : xmin;
   r.yExacta = null;
 
   guardarEnURL();
@@ -325,6 +353,7 @@ function pedirEstudio(id, referencia) {
 // --- Pintar ---------------------------------------------------------------------------------------
 
 function pintarTodo() {
+  pintarParada();
   pintarConfianza();
   pintarSolucion();
   pintarPasosPanel();
@@ -345,6 +374,23 @@ function discrepancia() {
     const b = r.referencia.enX(x);
     return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) > 1e-6 * Math.max(1, Math.abs(b));
   });
+}
+
+/**
+ * Aviso cuando la solución no llega hasta la x final pedida (o hasta «desde»):
+ * dónde se detuvo, por qué, y hasta dónde se integró con todos los métodos.
+ */
+function pintarParada() {
+  const caja = $("avisoParada");
+  caja.replaceChildren();
+  caja.hidden = r.paradas.length === 0;
+  const variable = r.edo.ec.independiente;
+  const N = expresionTex(sustituirParametros(r.edo.N));
+  for (const p of r.paradas) {
+    caja.append(crear("p", null, t("edo1.parada.titulo", { xf: `${variable} = ${cifras(p.pedido, 6)}` })));
+    caja.append(textoConFormulas(crear("p"), t(`edo1.parada.${p.motivo}`, { var: variable, x: cifras(p.x, 6), N })));
+    caja.append(crear("p", "muted", t("edo1.parada.corte", { var: variable, corte: cifras(p.corte, 6) })));
+  }
 }
 
 function pintarConfianza() {
@@ -445,8 +491,9 @@ function pintarTablaFinal() {
   if (r.yExacta) fila(t("edo1.exacta"), ref, null, null);
   for (const m of METODOS.filter((x) => r.metodos[x])) {
     const sol = r.metodos[m];
-    const i = sol.xs.indexOf(r.xf);
-    const v = i >= 0 ? sol.ys[i] : NaN;
+    // Punto más cercano a x final (RK45 llega a él con un redondeo de ~1e−16).
+    const i = sol.xs.reduce((m, x, k) => (Math.abs(x - r.xf) < Math.abs(sol.xs[m] - r.xf) ? k : m), 0);
+    const v = Math.abs(sol.xs[i] - r.xf) <= 1e-9 * Math.max(1, Math.abs(r.xf)) ? sol.ys[i] : NaN;
     fila(t(`metodoEDO.${m}`), v, Number.isFinite(v) ? Math.abs(v - ref) : null, String(sol.evaluaciones));
   }
   tabla.append(cuerpo);
@@ -478,7 +525,7 @@ function rangoY() {
 
 function calcularTrayectorias() {
   for (const q of trayectorias) {
-    const sol = dopriEnRango(r.f, q.x, q.y, r.xmin, r.xmax, { rtol: 1e-8, atol: 1e-10 });
+    const sol = dopriEnRango(r.f, q.x, q.y, r.ventana[0], r.ventana[1], { rtol: 1e-8, atol: 1e-10 });
     q.xs = sol.denso.xs;
     q.ys = sol.denso.ys;
   }
@@ -490,7 +537,7 @@ function pintarGraficas() {
   const [ymin, ymax] = rangoY();
   dibujar($("graficaCampo"), () => {
     const c = coloresTema();
-    const campoD = campoDirecciones(r.f, [r.xmin, r.xmax], [ymin, ymax], { nx: 25, ny: 17 });
+    const campoD = campoDirecciones(r.f, r.ventana, [ymin, ymax], { nx: 25, ny: 17 });
     const datos = [
       { x: campoD.xs, y: campoD.ys, type: "scatter", mode: "lines", line: { color: c.secundario, width: 1 }, name: t("edo1.campo.segmentos"), hoverinfo: "skip" },
       { x: r.referencia.denso.xs, y: r.referencia.denso.ys, type: "scatter", mode: "lines", line: { color: colorSerie(0), width: 3 }, name: t("edo1.solucionNumerica") },
@@ -500,7 +547,7 @@ function pintarGraficas() {
         marker: { size: 10, color: c.texto, line: { color: c.acento, width: 2 } }, name: t("edo1.condicionesIniciales") },
     ];
     return { datos, diseno: disenoBase({ tituloX: ec.independiente, tituloY: ec.dependiente, dragmode: false, showlegend: true,
-      xaxis: { range: [r.xmin, r.xmax] }, yaxis: { range: [ymin, ymax] } }) };
+      xaxis: { range: r.ventana }, yaxis: { range: [ymin, ymax] } }) };
   });
 
   // Comparador de métodos.
@@ -551,7 +598,7 @@ function conectarClicCampo() {
 }
 
 function anadirTrayectoria(x, y) {
-  if (!r || !Number.isFinite(x) || !Number.isFinite(y) || x < r.xmin || x > r.xmax) return;
+  if (!r || !Number.isFinite(x) || !Number.isFinite(y) || x < r.ventana[0] || x > r.ventana[1]) return;
   trayectorias.push({ x, y });
   if (trayectorias.length > 8) trayectorias.shift();
   pintarGraficas();
@@ -622,7 +669,7 @@ function pintarNumerico() {
 }
 
 function pasoRigidez() {
-  const L = r.xmax - r.xmin;
+  const L = Math.abs(r.xf - r.x0);
   const s = Number($("pasoRigidez").value) / 100;
   const [lo, hi] = [Math.log10(L / 2000), Math.log10(L / 4)];
   return 10 ** (lo + s * (hi - lo));
@@ -772,17 +819,18 @@ function conectarExportar() {
 function guardarEnURL() {
   const e = leerEntrada();
   history.replaceState(null, "", escribirFragmento({
-    e: e.ecuacion, x0: e.x0, y0: e.y0, xmin: e.xmin, xmax: e.xmax, h: e.h, tol: e.tol, m: e.metodoSimbolico,
+    // «desde» solo se escribe si se usa (vacío = x0). Ver migrarEstadoAntiguo para los enlaces viejos.
+    e: e.ecuacion, x0: e.x0, y0: e.y0, xf: e.xf, desde: e.desde, h: e.h, tol: e.tol, m: e.metodoSimbolico,
     parametros: Object.fromEntries(parametrosActuales.map((p) => [p, valoresParametros[p]])),
   }));
 }
 
-function cargarEstado({ ecuacion, e, x0 = "0", y0 = "1", xmin = "0", xmax = "5", h = "", tol = "1e-6", m = "", parametros = {} }) {
+function cargarEstado({ ecuacion, e, x0 = "0", y0 = "1", xf = "5", desde = "", h = "", tol = "1e-6", m = "", parametros = {} }) {
   campo.fijar(ecuacion ?? e ?? "");
   Object.assign($("x0"), { value: x0 });
   Object.assign($("y0"), { value: y0 });
-  Object.assign($("xmin"), { value: xmin });
-  Object.assign($("xmax"), { value: xmax });
+  Object.assign($("xf"), { value: xf });
+  Object.assign($("desde"), { value: desde });
   $("paso").value = h;
   $("tolerancia").value = tol;
   $("metodoSimbolico").value = m;
@@ -804,7 +852,7 @@ function pintarEjemplos() {
 function estadoInicial() {
   const u = leerFragmento(location.hash);
   if (u.ejemplo && buscarEjemplo(u.ejemplo)?.modulo === "edo1") return buscarEjemplo(u.ejemplo).datos;
-  if (u.e) return u;
+  if (u.e) return migrarEstadoAntiguo(u); // enlaces con xmin/xmax de la versión anterior
   return buscarEjemplo("logistica").datos;
 }
 
@@ -828,7 +876,7 @@ function iniciar() {
   });
   conectarSelectorModo({ botonVisual: $("modoVisual"), botonCodigo: $("modoCodigo"), aviso: $("avisoModo"), campos: () => [campo], t });
   conectarPestanas(document.querySelector('[role="tablist"]'), { alCambiar: (_id, panel) => reajustar(panel) });
-  for (const id of ["x0", "y0", "xmin", "xmax"]) {
+  for (const id of ["x0", "y0", "xf", "desde"]) {
     $(id).addEventListener("input", programarVivo);
     $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") calcular({ desdeUsuario: true }); });
   }
