@@ -31,6 +31,7 @@ import { campoVectorial, rejilla } from "../../nucleo/edo/campo.js";
 import { codigoPlano } from "../../nucleo/codigo/edo2.js";
 import { enlaceJacobiano } from "../../nucleo/edo/enlace-jacobianos.js";
 import { separatrices } from "../../nucleo/edo/separatrices.js";
+import { integrarImplicitoSistema, rigidezSistema } from "../../nucleo/edo/implicitos-sistema.js";
 import { leerFragmento, escribirFragmento } from "../../nucleo/estado-url.js";
 import { EJEMPLOS, ejemplo as buscarEjemplo } from "../../ejemplos.js";
 import { resolverOrden2Simbolico, resolverSistemaSimbolico, alEstadoSimbolico } from "../../simbolico/cliente.js";
@@ -291,6 +292,19 @@ function calcular({ soloNumerico = false, desdeUsuario = false } = {}) {
     simbolico: null, pendiente: !clase.simbolico && !soloNumerico, errorSimbolico: null, estudio: null, exacta: null,
   };
   r.autonomo = clase.autonomo;
+  // Jacobiano J(t, Y) para la rigidez y los métodos implícitos (simbólico si math.js sabe derivar).
+  const Js = jacobianoSimbolico([p.f, p.g], p.args);
+  r.Jt = Js ? (tt, [x, y]) => Js.fn(tt, x, y, ...p.valores) : (tt, [x, y]) => jacobianoNumerico((a, b) => F(tt, [a, b]), x, y);
+  r.rigidez = rigidezSistema(r.Jt, referencia.sol.xs, referencia.sol.Ys);
+  if (!soloNumerico) {
+    // El deslizador empieza en h ≈ 1,6·(límite de Euler): ahí se ve la diferencia (Euler explota,
+    // los implícitos no; con pasos mucho mayores, Euler implícito ya no pasa el salto rápido de
+    // Van der Pol). Sin rigidez, a media escala.
+    const L = Math.abs(tFin - t0);
+    const [lo, hi] = [Math.log10(L / 2000), Math.log10(L / 4)];
+    const objetivo = Number.isFinite(r.rigidez.hEuler) ? Math.log10(1.6 * r.rigidez.hEuler) : (lo + hi) / 2;
+    $("pasoRigidez").value = String(Math.round(100 * Math.min(1, Math.max(0, (objetivo - lo) / (hi - lo)))));
+  }
   r.ventana = datos.ventana ?? ventanaAuto(referencia.denso);
   r.Fxy = (x, y) => F(t0, [x, y]);
 
@@ -870,6 +884,59 @@ function pintarNumerico() {
     }));
   }
   pintarDeriva();
+  pintarRigidez();
+}
+
+/** Paso del deslizador de rigidez: escala logarítmica entre L/2000 y L/4. */
+function pasoRigidez() {
+  const L = Math.abs(r.tf - r.t0);
+  const s = Number($("pasoRigidez").value) / 100;
+  const [lo, hi] = [Math.log10(L / 2000), Math.log10(L / 4)];
+  return 10 ** (lo + s * (hi - lo));
+}
+
+/**
+ * Euler explícito frente a Euler implícito y trapecio implícito con el paso
+ * elegido, y el límite de estabilidad de Euler según los autovalores del
+ * jacobiano a lo largo de la solución.
+ */
+function pintarRigidez() {
+  const n = r.p.nombres;
+  const { lambda, hEuler } = r.rigidez;
+  const dp = r.metodos.dopri ?? dormandPrinceSistema(r.p.F, r.t0, r.Y0, r.tf, { rtol: r.tol, atol: r.tol * 1e-3 });
+  const texto = $("textoRigidez");
+  if (!lambda || !(lambda.re < 0)) {
+    texto.textContent = t("edo2.rigidez.noNegativo");
+  } else {
+    textoConFormulas(texto, t("edo2.rigidez.texto", {
+      lambda: lambda.im === 0 ? cifras(lambda.re, 4) : `${cifras(lambda.re, 4)} \\pm ${cifras(Math.abs(lambda.im), 4)}\\,i`,
+      heuler: cifras(hEuler, 3), pasos: dp.pasos.length, rechazados: dp.rechazados, tol: cientifica(r.tol),
+    }));
+  }
+  const h = pasoRigidez();
+  $("pasoRigidezValor").textContent = cifras(h, 3);
+  const N = Math.max(1, Math.round(Math.abs(r.tf - r.t0) / h));
+  const curvas = [
+    ["euler", integrarSistemaConPaso("euler", r.p.F, r.t0, r.Y0, r.tf, h), 1],
+    ["eulerImplicito", integrarImplicitoSistema("eulerImplicito", r.p.F, r.Jt, r.t0, r.Y0, r.tf, N), 2],
+    ["trapecioImplicito", integrarImplicitoSistema("trapecioImplicito", r.p.F, r.Jt, r.t0, r.Y0, r.tf, N), 4],
+  ];
+  const { xs, Ys } = r.referencia.denso;
+  const rango = rangoRobusto(Ys.map((Y) => Y[0])) ?? [-5, 5];
+  dibujar($("graficaRigidez"), () => ({
+    datos: [
+      { x: xs, y: xs.map((tt) => referenciaEn(tt)[0]), type: "scatter", mode: "lines", line: { color: coloresTema().texto, width: 2, dash: "dot" },
+        name: t(r.exacta ? "edo1.exacta" : "edo1.referencia") },
+      ...curvas.map(([m, sol, i]) => ({ x: sol.xs, y: sol.Ys.map((Y) => Y[0]), type: "scatter", mode: sol.xs.length > 150 ? "lines" : "lines+markers",
+        name: t(`metodoEDO.${m}`), line: { color: colorSerie(i), width: 2 }, marker: { symbol: SIMBOLOS[i], size: 5, color: colorSerie(i) } })),
+    ],
+    // Rango fijo: si Euler explota, se sale de la gráfica en vez de aplastar las demás curvas.
+    diseno: disenoBase({ tituloX: n.t, tituloY: n.x, showlegend: true, yaxis: { range: rango } }),
+  }));
+  const fallo = curvas.find(([m, sol]) => m !== "euler" && sol.detenido?.motivo === "newton");
+  textoConFormulas($("textoRigidezH"), fallo ? t("edo2.rigidez.newton", { h: cifras(h, 3) })
+    : !Number.isFinite(hEuler) ? t("edo1.rigidez.h.sinLambda", { h: cifras(h, 3) })
+      : t(h > hEuler ? "edo2.rigidez.h.inestable" : "edo2.rigidez.h.estable", { h: cifras(h, 3), heuler: cifras(hEuler, 3) }));
 }
 
 /** Deriva de la cantidad conservada H en cada método: |H(Y_n) − H(Y_0)|. */
@@ -1091,6 +1158,7 @@ function iniciar() {
     $(id).addEventListener("keydown", (e) => { if (e.key === "Enter") alEnter(); });
   }
   $("calcular").addEventListener("click", alEnter);
+  $("pasoRigidez").addEventListener("input", () => { if (r) pintarRigidez(); });
   alEstadoSimbolico(({ estado, paso }) => {
     $("estadoSimbolico").textContent = estado === "cargando" ? t(`simbolico.cargando.${paso ?? "pyodide"}`) : "";
   });
