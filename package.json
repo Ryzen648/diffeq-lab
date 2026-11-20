@@ -1,0 +1,18 @@
+{
+  "name": "diffeq-lab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Laboratorio interactivo de integrales y ecuaciones diferenciales: método, error y visualización",
+  "author": "Ricardo Jaico Pradinett",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/*.test.mjs\"",
+    "test:py": "node scripts/pruebas-python.mjs",
+    "servir": "node scripts/servidor.mjs 8767"
+  },
+  "devDependencies": {
+    "mathjs": "12.4.2",
+    "pyodide": "314.0.8"
+  }
+}

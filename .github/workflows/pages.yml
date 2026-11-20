@@ -1,0 +1,55 @@
+# Publica el sitio en GitHub Pages en cada push a main.
+# Requiere, una sola vez: Settings → Pages → Source: «GitHub Actions».
+#
+# Se publica una copia limpia (_site) con solo lo que sirve el navegador:
+# páginas, estilos, código fuente y el submódulo comun/. Ni pruebas, ni
+# node_modules, ni la configuración del repositorio.
+name: Despliegue en GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  pruebas:
+    uses: ./.github/workflows/pruebas.yml
+
+  construir:
+    needs: pruebas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+      - name: Copiar los archivos del sitio
+        run: |
+          mkdir _site
+          cp *.html _site/
+          cp -r css src _site/
+          [ -d docs/capturas ] && mkdir -p _site/docs && cp -r docs/capturas _site/docs/ || true
+          rsync -a --exclude '.git' --exclude '.github' --exclude 'tests' --exclude 'demo' --exclude 'scripts' comun/ _site/comun/
+          touch _site/.nojekyll
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  desplegar:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - id: despliegue
+        uses: actions/deploy-pages@v5

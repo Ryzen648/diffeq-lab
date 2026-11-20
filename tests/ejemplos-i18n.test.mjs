@@ -1,0 +1,50 @@
+import "./preparar.mjs";
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+
+import { EJEMPLOS, PAGINAS, disponible } from "../src/ejemplos.js";
+import { claves } from "../src/i18n/index.js";
+import es from "../src/i18n/es.js";
+import en from "../src/i18n/en.js";
+
+const leer = (ruta) => readFileSync(new URL(ruta, import.meta.url), "utf8");
+
+test("cada ejemplo tiene nombre y los disponibles tienen datos", () => {
+  const existentes = new Set(claves("es"));
+  const ids = new Set();
+  for (const e of EJEMPLOS) {
+    assert.ok(!ids.has(e.id), `ejemplo repetido: ${e.id}`);
+    ids.add(e.id);
+    assert.ok(existentes.has(`ejemplo.${e.id}`), `falta ejemplo.${e.id}`);
+    if (disponible(e)) assert.ok(e.datos, `${e.id} está disponible pero no tiene datos`);
+  }
+});
+
+test("el inglés solo usa claves que existen en español", () => {
+  for (const clave of Object.keys(en)) assert.ok(clave in es, `en.js tiene una clave que no está en es.js: ${clave}`);
+});
+
+test("todas las claves de las páginas y de la interfaz existen en el diccionario", () => {
+  const existentes = new Set(claves("es"));
+  const paginas = readdirSync(new URL("../", import.meta.url)).filter((f) => f.endsWith(".html"));
+  assert.ok(paginas.includes("index.html"));
+  for (const pagina of paginas) {
+    const html = leer(`../${pagina}`);
+    for (const m of html.matchAll(/data-i18n(?:-html|-aria-label|-title)?="([^"]+)"/g)) {
+      assert.ok(existentes.has(m[1]), `falta la clave ${m[1]} (${pagina})`);
+    }
+  }
+  const ui = readdirSync(new URL("../src/ui/", import.meta.url)).filter((f) => f.endsWith(".js"));
+  for (const archivo of ui) {
+    const codigo = leer(`../src/ui/${archivo}`);
+    for (const m of codigo.matchAll(/\bt\("([^"]+)"/g)) {
+      assert.ok(existentes.has(m[1]), `falta la clave ${m[1]} (src/ui/${archivo})`);
+    }
+  }
+});
+
+test("cada módulo con página tiene su archivo", () => {
+  const paginas = new Set(readdirSync(new URL("../", import.meta.url)));
+  for (const pagina of Object.values(PAGINAS)) assert.ok(paginas.has(pagina), `falta ${pagina}`);
+});

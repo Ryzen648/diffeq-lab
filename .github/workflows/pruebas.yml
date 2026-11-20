@@ -1,0 +1,24 @@
+name: Pruebas
+
+on:
+  push:
+  pull_request:
+  workflow_call: # el despliegue (pages.yml) no publica si las pruebas fallan
+
+permissions:
+  contents: read
+
+jobs:
+  javascript:
+    name: Núcleo numérico e interfaz (Node)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true # comun/ (lab-comun)
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
