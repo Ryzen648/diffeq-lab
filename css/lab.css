@@ -4,6 +4,27 @@
 
 main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 56px; }
 
+/* --- Colores de las gráficas ------------------------------------------------
+   Paleta categórica de referencia, validada contra las superficies de esta
+   página (#ffffff y #1b2029) con el validador de la guía de visualización. */
+:root {
+  --serie-1: #2a78d6; --serie-2: #eb6834; --serie-3: #1baf7a;
+  --serie-4: #eda100; --serie-5: #e87ba4; --serie-6: #008300;
+  --rejilla: #e8e7e1; --area: rgba(42, 120, 214, .16);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --serie-1: #3987e5; --serie-2: #d95926; --serie-3: #199e70;
+    --serie-4: #c98500; --serie-5: #d55181; --serie-6: #008300;
+    --rejilla: #2c313b; --area: rgba(57, 135, 229, .22);
+  }
+}
+:root[data-theme="dark"] {
+  --serie-1: #3987e5; --serie-2: #d95926; --serie-3: #199e70;
+  --serie-4: #c98500; --serie-5: #d55181; --serie-6: #008300;
+  --rejilla: #2c313b; --area: rgba(57, 135, 229, .22);
+}
+
 /* --- Barra del sitio ----------------------------------------------------- */
 .barra-sitio {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -40,3 +61,77 @@ a.modulo:hover { border-color: var(--accent); }
 }
 a.chip:hover, button.chip:hover { border-color: var(--accent); }
 .chip.pronto { color: var(--muted); border-style: dashed; cursor: default; }
+
+/* --- Entrada --------------------------------------------------------------- */
+.fila-formula { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px; margin-top: 8px; }
+.nombre-formula { margin: 0; font-weight: 400; font-style: italic; font-family: "Times New Roman", Times, serif; font-size: 1.15rem; white-space: nowrap; }
+.limites { margin-top: 14px; }
+.interruptor { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; margin: 0; cursor: pointer; }
+.interruptor input { width: 18px; height: 18px; }
+.campos-limites { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-top: 10px; }
+.campos-limites label.corto { margin: 0; font-weight: 400; }
+input.numero { width: 8rem; }
+.etiquetas { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; min-height: 26px; }
+.etiqueta.aviso { background: var(--warn-bg); color: var(--warn); }
+.vista-previa { min-height: 48px; padding: 8px 12px; border: 1px dashed var(--border); border-radius: 7px; }
+
+.parametros { margin-top: 12px; }
+.parametro { display: grid; grid-template-columns: 3.5rem minmax(0, 1fr) 7rem; gap: 10px; align-items: center; margin: 6px 0; }
+.parametro label { margin: 0; font-style: italic; font-family: "Times New Roman", Times, serif; font-size: 1.1rem; font-weight: 400; }
+.parametro input[type="range"] { width: 100%; accent-color: var(--accent); }
+.parametro input.numero { width: 100%; }
+.estado-simbolico { color: var(--muted); font-size: .88rem; }
+
+/* --- Resultados --------------------------------------------------------------- */
+.barra-resultados { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin: 8px 0 12px; }
+.acciones { display: flex; flex-wrap: wrap; gap: 6px; }
+button.accion { font-size: .85rem; padding: 5px 10px; min-height: 36px; color: var(--muted); }
+button.accion:hover { color: var(--text); border-color: var(--accent); }
+
+.pestanas { display: flex; gap: 2px; overflow-x: auto; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.pestanas [role="tab"] {
+  border: 0; border-bottom: 3px solid transparent; border-radius: 6px 6px 0 0; background: transparent;
+  color: var(--muted); padding: 9px 14px; white-space: nowrap; min-height: 44px;
+}
+.pestanas [role="tab"][aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+.pestanas [role="tab"]:hover { color: var(--text); background: var(--code-bg); }
+.panel { overflow-wrap: anywhere; }
+
+.grafica { width: 100%; height: 360px; }
+.grafica.alta { height: 440px; }
+@media (max-width: 560px) { .grafica { height: 300px; } .grafica.alta { height: 380px; } }
+.controles { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.controles label { margin: 0; font-weight: 400; }
+.controles input[type="range"] { flex: 1 1 180px; accent-color: var(--accent); }
+
+.tabla-desplazable { overflow-x: auto; }
+.tabla { border-collapse: collapse; width: 100%; font-size: .92rem; }
+.tabla th, .tabla td { padding: 6px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+.tabla thead th { color: var(--muted); font-weight: 600; }
+.tabla td.num { font-variant-numeric: tabular-nums; font-family: ui-monospace, Consolas, monospace; white-space: nowrap; }
+
+.verificacion { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.verif { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; align-items: start; }
+.verif-icono { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 999px; font-weight: 700; }
+.verif.ok .verif-icono { background: var(--ok-bg); color: var(--ok); }
+.verif.bad .verif-icono { background: var(--bad-bg); color: var(--bad); }
+.verif.aviso .verif-icono, .verif.pendiente .verif-icono { background: var(--warn-bg); color: var(--warn); }
+
+pre.codigo { background: var(--code-bg); border-radius: 8px; padding: 14px; overflow-x: auto; font-size: .86rem; line-height: 1.5; }
+
+/* Pasos */
+ol.pasos, ol.pasos-hijos { padding-left: 1.4rem; margin: 6px 0; }
+ol.pasos-hijos { border-left: 2px solid var(--border); padding-left: 1.2rem; margin-left: .2rem; }
+.paso { margin: 8px 0; }
+.paso-texto { margin: 0 0 2px; }
+.paso-rol { margin: 0; font-size: .85rem; font-weight: 600; color: var(--muted); }
+.paso-detalle { margin: 2px 0; color: var(--muted); }
+.paso-ecuacion { padding: 2px 0 6px; }
+.formula-linea .katex { font-size: 1.02em; }
+
+/* Integrales impropias */
+.veredicto { font-weight: 700; margin: 12px 0 4px; }
+.veredicto.converge { color: var(--ok); }
+.veredicto.diverge { color: var(--bad); }
+.veredicto.dudoso { color: var(--warn); }
+.causas { margin: 4px 0 8px; padding-left: 1.2rem; }

@@ -42,7 +42,7 @@ export const EJEMPLOS = Object.freeze([
 ]);
 
 /** Página de cada módulo disponible. Un módulo aparece aquí cuando su página existe. */
-export const PAGINAS = Object.freeze({});
+export const PAGINAS = Object.freeze({ integrales: "integrales.html" });
 
 export const disponible = (ejemplo) => ejemplo.modulo in PAGINAS;
 

@@ -39,6 +39,31 @@ test("cada código de error del núcleo tiene texto y se lanza en algún sitio",
   }
 });
 
+test("en los pasos, cada hueco {dato} es un dato real del paso y no una llave de LaTeX", async () => {
+  // Datos que manda Python (pasos_integral.py) para cada regla.
+  const DATOS = {
+    potencia: ["n"], reciproco: ["u"], exponencialBase: ["base"], constanteFuera: ["c", "resto"],
+    sustitucion: ["u", "du", "var", "integralU"], partes: ["u", "dv", "du", "v", "var"],
+    partesCiclica: ["coeficiente"], fraccionesParciales: ["reescrito"], completarCuadrado: ["reescrito"],
+    identidadTrig: ["reescrito"], desarrollar: ["reescrito"], reescribir: ["reescrito"],
+    sustitucionTrig: ["theta", "x", "var", "reescrito"], funcionEspecial: ["funcion"], otra: ["tipo"],
+  };
+  for (const [clave, texto] of Object.entries(es).filter(([k]) => /^paso\.[a-zA-Z]+$/.test(k))) {
+    const regla = clave.slice("paso.".length);
+    const huecos = [...texto.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
+    const datos = DATOS[regla] ?? [];
+    // Cualquier {palabra} que coincida con un dato se rellenará: tiene que ser intencionado.
+    for (const h of huecos) {
+      if (datos.includes(h)) continue;
+      assert.ok(!["n", "u", "x", "v", "c", "du", "dv"].includes(h) || !datos.length,
+        `${clave}: «{${h}}» parece LaTeX pero coincide con un nombre de dato`);
+    }
+  }
+  const { t } = await import("../src/i18n/index.js");
+  assert.match(t("paso.potencia", { n: "-2" }), /w\^n\\,dw/);
+  assert.match(t("paso.reciproco", { u: "x - 1" }), /\\dfrac\{dw\}\{w\}/);
+});
+
 test("el inglés solo usa claves que existen en español", () => {
   for (const clave of Object.keys(en)) assert.ok(clave in es, `en.js tiene una clave que no está en es.js: ${clave}`);
 });
