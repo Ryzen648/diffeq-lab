@@ -64,8 +64,6 @@ export default {
   "inicio.edo2.texto": "Retratos de fase, equilibrios y su estabilidad con los autovalores del jacobiano.",
   "inicio.edp.titulo": "EDP",
   "inicio.edp.texto": "Calor, onda y Laplace por diferencias finitas, con animación y series de Fourier.",
-  "inicio.pinn.titulo": "PINNs en el navegador",
-  "inicio.pinn.texto": "Redes neuronales informadas por la física (TensorFlow.js) comparadas con el método clásico.",
   "inicio.ejemplos": "Biblioteca de ejemplos",
   "inicio.ejemplos.ayuda": "Un clic abre el ejemplo con todo cargado. Los de fases posteriores aparecen como próximamente.",
   "inicio.serie": "Otros proyectos de la serie",

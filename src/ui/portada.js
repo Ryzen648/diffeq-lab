@@ -9,7 +9,6 @@ const MODULOS = [
   { id: "edo1", fase: "1b" },
   { id: "edo2", fase: "2" },
   { id: "edp", fase: "3" },
-  { id: "pinn", fase: "4" },
 ];
 
 function pintarModulos() {
