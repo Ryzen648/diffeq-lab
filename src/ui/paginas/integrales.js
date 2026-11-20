@@ -42,7 +42,7 @@ const TOL_VISUAL = 1e-6;
 
 let campoF;
 const valoresParametros = {};
-let parametrosActuales = [];
+let parametrosActuales = null; // lista con deslizadores en pantalla (null: repintar)
 let temporizadorVivo = null;
 let numeroCalculo = 0;
 let r = null; // resultado del último cálculo (ver calcular)
@@ -112,6 +112,22 @@ function prepararCalculo() {
 
 // --- En vivo: vista previa, clasificación y parámetros -------------------------------
 
+/**
+ * Deja los deslizadores de acuerdo con los parámetros de la fórmula actual.
+ * Se compara con lo que está PINTADO (null tras cargar un ejemplo o un enlace:
+ * fuerza a repintar). Antes se comparaba con una lista vaciada a mano, y al
+ * pasar a una fórmula sin parámetros ([] === []) quedaban los deslizadores viejos.
+ */
+function sincronizarParametros(lista) {
+  if (parametrosActuales !== null && lista.join() === parametrosActuales.join()) return;
+  parametrosActuales = [...lista];
+  pintarDeslizadores($("parametros"), parametrosActuales, valoresParametros, {
+    t,
+    alMover: () => { if (r) calcular({ soloNumerico: true }); },
+    alSoltar: () => { if (r) calcular({}); },
+  });
+}
+
 function refrescarVivo() {
   clearTimeout(temporizadorVivo);
   const { codigo, definida, a, b } = leerEntrada();
@@ -133,15 +149,7 @@ function refrescarVivo() {
     return;
   }
 
-  // Parámetros: se repintan los deslizadores solo si cambia la lista.
-  if (expr.parametros.join() !== parametrosActuales.join()) {
-    parametrosActuales = expr.parametros;
-    pintarDeslizadores($("parametros"), parametrosActuales, valoresParametros, {
-      t,
-      alMover: () => { if (r) calcular({ soloNumerico: true }); },
-      alSoltar: () => { if (r) calcular({}); },
-    });
-  }
+  sincronizarParametros(expr.parametros);
 
   let limites = "";
   const chip = (clave, datos, clase = "") => etiquetas.append(crear("span", `etiqueta ${clase}`, t(clave, datos)));
@@ -185,6 +193,10 @@ function programarVivo() {
  * pantalla y lleva la vista al resultado.
  */
 function calcular({ soloNumerico = false, desdeUsuario = false } = {}) {
+  // Sin esperar a la revisión en vivo (300 ms tras teclear): así los deslizadores
+  // y la lista de parámetros corresponden a la fórmula que se va a calcular.
+  // (Al mover un deslizador no hace falta: la lista no cambia.)
+  if (!soloNumerico) refrescarVivo();
   let datos;
   try {
     datos = prepararCalculo();
@@ -206,7 +218,7 @@ function calcular({ soloNumerico = false, desdeUsuario = false } = {}) {
     mostrarError(err);
     return;
   }
-  guardarEnURL();
+  guardarEnURL(expr.parametros);
   pintarTodo();
   $("resultados").hidden = false;
   if (desdeUsuario) llevarAlResultado($("resultados"));
@@ -775,11 +787,12 @@ function conectarExportar() {
 
 // --- Estado en la URL y ejemplos ------------------------------------------------------------------
 
-function guardarEnURL() {
+/** `parametros`: los de la fórmula que se acaba de calcular (no los del último repintado). */
+function guardarEnURL(parametros) {
   const { codigo, definida, a, b } = leerEntrada();
   const fragmento = escribirFragmento({
     f: codigo, a: definida ? a : "", b: definida ? b : "",
-    parametros: Object.fromEntries(parametrosActuales.map((p) => [p, valoresParametros[p]])),
+    parametros: Object.fromEntries(parametros.map((p) => [p, valoresParametros[p]])),
   });
   history.replaceState(null, "", fragmento);
 }
@@ -790,7 +803,7 @@ function cargarEstado({ f, a = "", b = "", parametros = {} }) {
   $("a").value = a;
   $("b").value = b;
   Object.assign(valoresParametros, parametros);
-  parametrosActuales = [];
+  parametrosActuales = null;
   refrescarVivo();
 }
 
