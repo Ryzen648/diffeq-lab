@@ -38,17 +38,20 @@ export function regresionLineal(xs, ys) {
  * Devuelve { pendiente, r2, usados: [{h, error}] } o null si hay < 3 puntos útiles.
  */
 export function ordenObservado(puntos, { piso = 1e-13, maxPuntos = 5 } = {}) {
+  // Se empieza por el extremo asintótico (h pequeño, por encima del piso) y se
+  // avanza hacia h grande mientras el error siga creciendo. Así un h grande
+  // «raro» (p. ej. Euler con h = 2.5 que se pasa de largo y casualmente acierta
+  // más) no estropea el ajuste: queda fuera, en la zona preasintótica.
   const ordenados = puntos
-    .filter((p) => Number.isFinite(p.h) && p.h > 0 && Number.isFinite(p.error))
-    .sort((p, q) => q.h - p.h); // de h grande a h pequeño
-  // Recorre hacia h pequeño mientras el error siga bajando y supere el piso.
+    .filter((p) => Number.isFinite(p.h) && p.h > 0 && Number.isFinite(p.error) && p.error > piso)
+    .sort((p, q) => p.h - q.h); // de h pequeño a h grande
   const utiles = [];
   for (const p of ordenados) {
-    if (p.error <= piso) break;
-    if (utiles.length && p.error >= utiles[utiles.length - 1].error) break;
+    if (utiles.length && p.error <= utiles[utiles.length - 1].error) break;
     utiles.push(p);
+    if (utiles.length === maxPuntos) break;
   }
-  const usados = utiles.slice(-maxPuntos);
+  const usados = utiles.reverse(); // de h grande a h pequeño, como antes
   if (usados.length < 3) return null;
   const { pendiente, r2 } = regresionLineal(usados.map((p) => Math.log10(p.h)), usados.map((p) => Math.log10(p.error)));
   return { pendiente, r2, usados };

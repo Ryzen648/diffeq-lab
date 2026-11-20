@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>EDO de primer orden · DiffEq Lab</title>
+<meta name="description" content="EDO de primer orden: campo de direcciones, Euler, Heun, RK4 y Dormand–Prince comparados, orden de convergencia, rigidez y solución simbólica paso a paso.">
+<meta name="author" content="Ricardo Jaico Pradinett">
+<!-- Aplica el tema guardado antes del primer pintado (ver comun/js/tema.js). -->
+<script>try{var t=localStorage.getItem("tema");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}</script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<link rel="stylesheet" href="comun/css/tema.css">
+<link rel="stylesheet" href="css/lab.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.2/math.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/4.3.0/plotly-cartesian.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/4.3.0/plotly-locale-es.min.js"></script>
+<script type="module" src="src/ui/paginas/edo1.js"></script>
+</head>
+<body>
+<header class="barra-sitio">
+  <a class="marca" href="index.html" data-i18n="sitio.nombre">DiffEq Lab</a>
+  <nav class="nav" data-i18n-aria-label="nav.principal">
+    <a href="index.html" data-i18n="nav.inicio"></a>
+    <a href="integrales.html" data-i18n="nav.integrales"></a>
+    <a href="edo1.html" data-i18n="nav.edo1"></a>
+  </nav>
+  <button type="button" id="tema" class="boton-tema"></button>
+</header>
+<main>
+  <h1 data-i18n="edo1.titulo">EDO de primer orden</h1>
+  <p class="lead" data-i18n="edo1.entradilla"></p>
+
+  <section class="card" aria-labelledby="tituloEntrada">
+    <div class="cabecera">
+      <h2 id="tituloEntrada" data-i18n="edo1.entrada"></h2>
+      <div class="modo" role="group" data-i18n-aria-label="comun.modo">
+        <button type="button" id="modoVisual" data-i18n="comun.modo.visual" aria-pressed="false"></button>
+        <button type="button" id="modoCodigo" data-i18n="comun.modo.codigo" aria-pressed="true"></button>
+      </div>
+    </div>
+    <p id="avisoModo" class="aviso" role="status" hidden></p>
+
+    <div class="fila-formula">
+      <label for="ecuacion" class="nombre-formula" data-i18n="edo1.ecuacion"></label>
+      <div id="campoEcuacion" class="campo-formula"></div>
+    </div>
+    <p class="hint" data-i18n-html="edo1.notacion.ayuda"></p>
+    <p id="errorEcuacion" class="error-fila" role="alert" hidden></p>
+
+    <fieldset class="condiciones">
+      <legend data-i18n="edo1.condiciones"></legend>
+      <div class="campos-limites">
+        <label for="x0" class="corto" id="etiquetaX0">x₀ =</label><input id="x0" class="campo numero" autocomplete="off" spellcheck="false">
+        <label for="y0" class="corto" id="etiquetaY0">y₀ =</label><input id="y0" class="campo numero" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="campos-limites">
+        <label for="xmin" class="corto" data-i18n="edo1.xmin"></label><input id="xmin" class="campo numero" autocomplete="off" spellcheck="false">
+        <label for="xmax" class="corto" data-i18n="edo1.xmax"></label><input id="xmax" class="campo numero" autocomplete="off" spellcheck="false">
+      </div>
+      <p id="errorCondiciones" class="error-fila" hidden></p>
+    </fieldset>
+
+    <h3 data-i18n="entrada.vistaPrevia"></h3>
+    <div id="vistaPrevia" class="math vista-previa"></div>
+    <div id="clasificacion" class="etiquetas" aria-live="polite"></div>
+    <p class="hint" data-i18n="edo1.clasificacion.ayuda"></p>
+
+    <div id="parametros" class="parametros" hidden></div>
+
+    <details>
+      <summary class="muted" data-i18n="edo1.metodos"></summary>
+      <fieldset class="metodos">
+        <legend class="solo-lectores" data-i18n="edo1.metodos"></legend>
+        <label class="interruptor"><input type="checkbox" name="metodo" value="euler" checked> <span data-i18n="metodoEDO.euler"></span></label>
+        <label class="interruptor"><input type="checkbox" name="metodo" value="heun" checked> <span data-i18n="metodoEDO.heun"></span></label>
+        <label class="interruptor"><input type="checkbox" name="metodo" value="rk4" checked> <span data-i18n="metodoEDO.rk4"></span></label>
+        <label class="interruptor"><input type="checkbox" name="metodo" value="dopri" checked> <span data-i18n="metodoEDO.dopri"></span></label>
+      </fieldset>
+      <div class="campos-limites">
+        <label for="paso" class="corto" data-i18n="edo1.paso"></label><input id="paso" class="campo numero" autocomplete="off">
+        <label for="tolerancia" class="corto" data-i18n="edo1.tolerancia"></label><input id="tolerancia" class="campo numero" autocomplete="off" value="1e-6">
+      </div>
+      <p class="hint" data-i18n="edo1.paso.ayuda"></p>
+      <label for="metodoSimbolico" data-i18n="edo1.metodoSimbolico"></label>
+      <select id="metodoSimbolico">
+        <option value="" data-i18n="edo1.metodoSimbolico.auto"></option>
+        <option value="separable" data-i18n="metodoSimb.separable"></option>
+        <option value="lineal" data-i18n="metodoSimb.lineal"></option>
+        <option value="bernoulli" data-i18n="metodoSimb.bernoulli"></option>
+        <option value="exacta" data-i18n="metodoSimb.exacta"></option>
+      </select>
+      <h3 data-i18n="entrada.sintaxis.titulo"></h3>
+      <p class="muted" data-i18n-html="entrada.sintaxis.texto"></p>
+    </details>
+
+    <div class="barra-accion">
+      <button class="primary" id="calcular" type="button" data-i18n="entrada.calcular"></button>
+      <span id="estadoSimbolico" class="estado-simbolico" role="status"></span>
+    </div>
+
+    <h3 data-i18n="entrada.ejemplos"></h3>
+    <div id="ejemplos" class="chips"></div>
+  </section>
+
+  <div id="error" class="error" role="alert" hidden></div>
+
+  <section id="resultados" aria-labelledby="tituloResultados" hidden>
+    <h2 id="tituloResultados" class="solo-lectores" data-i18n="resultado.titulo"></h2>
+    <div class="barra-resultados">
+      <span id="confianza" class="badge"></span>
+      <div class="acciones">
+        <button type="button" class="accion" id="copiarEnlace" data-i18n="exportar.enlace"></button>
+        <button type="button" class="accion" id="copiarLatex" data-i18n="exportar.latex"></button>
+        <button type="button" class="accion" id="descargarCsv" data-i18n="exportar.csv"></button>
+        <button type="button" class="accion" id="descargarPng" data-i18n="exportar.png"></button>
+        <button type="button" class="accion" id="descargarPy" data-i18n="exportar.python"></button>
+      </div>
+    </div>
+    <p id="avisoCopia" class="solo-lectores" role="status"></p>
+
+    <div class="pestanas" role="tablist" data-i18n-aria-label="resultado.titulo">
+      <button role="tab" id="tab-solucion" data-pestana="solucion" aria-controls="panel-solucion" aria-selected="true" data-i18n="pestana.solucion"></button>
+      <button role="tab" id="tab-pasos" data-pestana="pasos" aria-controls="panel-pasos" data-i18n="pestana.pasos"></button>
+      <button role="tab" id="tab-graficas" data-pestana="graficas" aria-controls="panel-graficas" data-i18n="pestana.graficas"></button>
+      <button role="tab" id="tab-numerico" data-pestana="numerico" aria-controls="panel-numerico" data-i18n="pestana.numerico"></button>
+      <button role="tab" id="tab-verificacion" data-pestana="verificacion" aria-controls="panel-verificacion" data-i18n="pestana.verificacion"></button>
+      <button role="tab" id="tab-codigo" data-pestana="codigo" aria-controls="panel-codigo" data-i18n="pestana.codigo"></button>
+    </div>
+
+    <section role="tabpanel" id="panel-solucion" aria-labelledby="tab-solucion" class="card panel" tabindex="0">
+      <div id="solucionEcuacion" class="math"></div>
+      <div id="solucionTipos" class="etiquetas"></div>
+      <div id="solucionGeneral"></div>
+      <div id="solucionParticular"></div>
+      <p id="solucionConstantes" class="aviso" hidden></p>
+      <p id="solucionNota" class="muted"></p>
+      <h3 data-i18n="edo1.valoresFinales"></h3>
+      <div class="tabla-desplazable"><table id="tablaFinal" class="tabla"></table></div>
+    </section>
+
+    <section role="tabpanel" id="panel-pasos" aria-labelledby="tab-pasos" class="card panel" tabindex="0" hidden>
+      <p id="pasosMetodo"></p>
+      <div id="pasos"></div>
+    </section>
+
+    <section role="tabpanel" id="panel-graficas" aria-labelledby="tab-graficas" class="card panel" tabindex="0" hidden>
+      <h3 data-i18n="edo1.campo"></h3>
+      <p class="muted" data-i18n="edo1.campo.ayuda"></p>
+      <div id="graficaCampo" class="grafica alta clicable" role="img" data-i18n-aria-label="edo1.campo.aria"></div>
+      <form id="formTrayectoria" class="campos-limites">
+        <label for="trayX" class="corto">x =</label><input id="trayX" class="campo numero" autocomplete="off">
+        <label for="trayY" class="corto">y =</label><input id="trayY" class="campo numero" autocomplete="off">
+        <button type="submit" class="accion" data-i18n="edo1.campo.anadir"></button>
+        <button type="button" class="accion" id="borrarTrayectorias" data-i18n="edo1.campo.borrar"></button>
+      </form>
+      <h3 data-i18n="edo1.comparador"></h3>
+      <div id="graficaComparador" class="grafica" role="img" data-i18n-aria-label="edo1.comparador.aria"></div>
+      <h3 data-i18n="edo1.errorX"></h3>
+      <p id="textoErrorX" class="muted"></p>
+      <div id="graficaErrorX" class="grafica" role="img" data-i18n-aria-label="edo1.errorX.aria"></div>
+    </section>
+
+    <section role="tabpanel" id="panel-numerico" aria-labelledby="tab-numerico" class="card panel" tabindex="0" hidden>
+      <p id="numericoNota" class="muted"></p>
+      <h3 data-i18n="numerico.convergencia"></h3>
+      <p class="muted" data-i18n="edo1.convergencia.ayuda"></p>
+      <div class="tabla-desplazable"><table id="tablaOrdenes" class="tabla"></table></div>
+      <div id="graficaConvergencia" class="grafica alta" role="img" data-i18n-aria-label="numerico.convergencia.aria"></div>
+      <h3 data-i18n="numerico.evaluaciones"></h3>
+      <p class="muted" data-i18n="edo1.evaluaciones.ayuda"></p>
+      <div id="graficaEvaluaciones" class="grafica alta" role="img" data-i18n-aria-label="numerico.evaluaciones.aria"></div>
+      <h3 data-i18n="edo1.pasosRK45"></h3>
+      <p class="muted" data-i18n="edo1.pasosRK45.ayuda"></p>
+      <div id="graficaPasos" class="grafica" role="img" data-i18n-aria-label="edo1.pasosRK45.aria"></div>
+
+      <h3 data-i18n="edo1.rigidez"></h3>
+      <p id="textoRigidez" class="muted"></p>
+      <div id="bloqueRigidez">
+        <div class="controles">
+          <label for="pasoRigidez"><span data-i18n="edo1.rigidez.h"></span> <output id="pasoRigidezValor" for="pasoRigidez"></output></label>
+          <input type="range" id="pasoRigidez" min="0" max="100" value="50">
+        </div>
+        <div id="graficaRigidez" class="grafica" role="img" data-i18n-aria-label="edo1.rigidez.aria"></div>
+        <p id="textoRigidezH" class="muted" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section role="tabpanel" id="panel-verificacion" aria-labelledby="tab-verificacion" class="card panel" tabindex="0" hidden>
+      <ul id="verificacion" class="verificacion"></ul>
+    </section>
+
+    <section role="tabpanel" id="panel-codigo" aria-labelledby="tab-codigo" class="card panel" tabindex="0" hidden>
+      <p class="muted" data-i18n="codigo.ayuda"></p>
+      <div class="acciones">
+        <button type="button" class="accion" id="copiarPy" data-i18n="codigo.copiar"></button>
+      </div>
+      <pre class="codigo"><code id="codigoPython"></code></pre>
+    </section>
+  </section>
+
+  <footer data-i18n-html="pie.texto"></footer>
+</main>
+</body>
+</html>
