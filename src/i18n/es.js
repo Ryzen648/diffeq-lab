@@ -500,6 +500,7 @@ export default {
   "verif.edoSoloNumerica": "No hay solución simbólica con la que comparar; queda la comprobación cruzada entre métodos numéricos.",
   "verif.edoCruzada": "RK4 con 2000 pasos y Dormand–Prince con tolerancia 10⁻¹² coinciden en x = {x} con una diferencia de {diferencia}.",
   "verif.edoCruzadaFalla": "RK4 con 2000 pasos y Dormand–Prince con tolerancia 10⁻¹² NO coinciden en x = {x}: difieren en {diferencia}. La solución numérica no es fiable ahí (rigidez, singularidad cercana o sensibilidad extrema).",
+  "verif.edoCruzadaSinRK4": "RK4 con 2000 pasos no llegó hasta x = {x} (explota o se sale del dominio), así que no se pudo contrastar con Dormand–Prince.",
   "verif.definidaFalla": "Valor exacto (SymPy) frente a {metodo} (JavaScript): NO coinciden, difieren en {diferencia}.",
 
   // --- Ejemplos (nombres) ---

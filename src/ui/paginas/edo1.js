@@ -32,6 +32,8 @@ import { EJEMPLOS, ejemplo as buscarEjemplo } from "../../ejemplos.js";
 import { resolverEDO1Simbolico, alEstadoSimbolico } from "../../simbolico/cliente.js";
 import { crearTrabajador } from "../../workers/rpc.js";
 import { t, mensajeDeError } from "../../i18n/index.js";
+import { comprobacion, estadoGlobal, componentesFallidos, estaVerificado, errores } from "../../nucleo/verificacion.js";
+import { pintarComprobaciones, avisarEnSolucion } from "../verificacion.js";
 import { $, crear, pintarTex, iniciarPagina } from "../pagina.js";
 import { crearCampoFormula, conectarSelectorModo } from "../campo-formula.js";
 import { conectarPestanas } from "../pestanas.js";
@@ -381,16 +383,6 @@ function pintarTodo() {
 /** Valor de referencia en x: la solución exacta si la hay; si no, Dormand–Prince fino. */
 const referenciaEn = (x) => (r.yExacta ? r.yExacta(x) : r.referencia.enX(x));
 
-function discrepancia() {
-  if (!r.yExacta) return false;
-  const xs = r.referencia.denso.xs.filter((_, i) => i % 7 === 0);
-  return xs.some((x) => {
-    const a = r.yExacta(x);
-    const b = r.referencia.enX(x);
-    return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) > 1e-6 * Math.max(1, Math.abs(b));
-  });
-}
-
 /**
  * Aviso cuando la solución no llega hasta la x final pedida (o hasta «desde»):
  * dónde se detuvo, por qué, y hasta dónde se integró con todos los métodos.
@@ -410,17 +402,18 @@ function pintarParada() {
 
 function pintarConfianza() {
   const s = r.simbolico;
+  // El estado sale de las mismas comprobaciones que la pestaña Verificación.
+  const lista = comprobacionesEDO1();
+  const estado = estadoGlobal(lista);
   let clase = "aviso";
   let texto;
-  if (discrepancia()) {
+  if (estado === "fallida") {
     clase = "bad";
-    texto = t("confianza.discrepancia");
-  } else if (s?.particular) {
-    clase = "ok";
-    texto = t("confianza.edoExacta", { metodo: t(`metodoSimb.${s.metodo}`) });
-  } else if (s?.implicita) {
-    clase = "ok";
-    texto = t("confianza.edoImplicita", { metodo: t(`metodoSimb.${s.metodo}`) });
+    texto = t("confianza.fallida", { componentes: componentesFallidos(lista).map((c) => t(`verif.componente.${c}`)).join(", ") });
+  } else if (s?.particular || s?.implicita) {
+    texto = t(s.particular ? "confianza.edoExacta" : "confianza.edoImplicita", { metodo: t(`metodoSimb.${s.metodo}`) });
+    if (estaVerificado(estado)) clase = "ok";
+    else if (estado === "parcial") texto = t("confianza.parcial", { base: texto });
   } else {
     texto = t("confianza.edoNumerica", { tol: cientifica(1e-12) });
   }
@@ -726,27 +719,20 @@ function pintarRigidez(dp) {
 
 // --- Verificación -----------------------------------------------------------------------------------------
 
-function itemVerificacion(estado, clave, datos = {}) {
-  const li = crear("li", `verif ${estado}`);
-  li.append(crear("span", "verif-icono", { ok: "✓", bad: "✗", aviso: "!", pendiente: "…" }[estado]));
-  const texto = crear("span");
-  textoConFormulas(texto, t(clave, datos));
-  li.append(texto);
-  $("verificacion").append(li);
-}
-
-function pintarVerificacion() {
-  $("verificacion").replaceChildren();
+/** Comprobaciones de lo que se muestra (capa compartida: src/nucleo/verificacion.js). */
+function comprobacionesEDO1() {
+  const lista = [];
   const s = r.simbolico;
-  if (r.pendiente) itemVerificacion("pendiente", "verif.pendiente");
+  if (r.pendiente) lista.push(comprobacion({ componente: "ecuacion", metodo: "simbolica", resultado: "pendiente", clave: "verif.pendiente" }));
+  // 1. SymPy: la solución sustituida en la ecuación (residuo) y en la condición inicial.
   const v = s?.verificacion;
   if (v) {
-    if (v.simbolica) itemVerificacion("ok", "verif.edoResiduo");
-    else if (v.numerica) itemVerificacion("ok", "verif.edoResiduoNumerico", { residuo: v.residuo });
-    else itemVerificacion("bad", "verif.edoResiduoFalla", { residuo: v.residuo });
-    itemVerificacion(v.ci ? "ok" : "bad", v.ci ? "verif.edoCI" : "verif.edoCIFalla");
+    if (v.simbolica) lista.push(comprobacion({ componente: "ecuacion", metodo: "simbolica", resultado: "ok", clave: "verif.edoResiduo" }));
+    else if (v.numerica) lista.push(comprobacion({ componente: "ecuacion", resultado: "ok", clave: "verif.edoResiduoNumerico", datos: { residuo: v.residuo } }));
+    else lista.push(comprobacion({ componente: "ecuacion", metodo: "simbolica", resultado: "falla", clave: "verif.edoResiduoFalla", datos: { residuo: v.residuo } }));
+    lista.push(comprobacion({ componente: "condicionInicial", metodo: "simbolica", resultado: v.ci ? "ok" : "falla", clave: v.ci ? "verif.edoCI" : "verif.edoCIFalla" }));
   }
-  // Comprobación independiente (JS, sin SymPy) contra Dormand–Prince fino.
+  // 2. Independiente (JavaScript, sin SymPy): la solución mostrada frente a Dormand–Prince fino.
   const xs = r.referencia.denso.xs.filter((_, i) => i % 5 === 0);
   if (r.yExacta) {
     let peor = 0;
@@ -754,7 +740,7 @@ function pintarVerificacion() {
       const d = Math.abs(r.yExacta(x) - r.referencia.enX(x)) / Math.max(1, Math.abs(r.referencia.enX(x)));
       if (Number.isFinite(d)) peor = Math.max(peor, d);
     }
-    itemVerificacion(peor < 1e-6 ? "ok" : "bad", "verif.edoNumerica", { error: cientifica(peor) });
+    lista.push(comprobacion({ componente: "solucionExacta", resultado: peor < 1e-6 ? "ok" : "falla", clave: "verif.edoNumerica", datos: { error: cientifica(peor) }, errorRel: peor }));
   } else if (s?.implicita?.F && s.implicita.K !== null) {
     try {
       const F = prepararExpresion(s.implicita.F, ["x", "y"], { parametrosPermitidos: false }).fn;
@@ -764,21 +750,32 @@ function pintarVerificacion() {
         const d = Math.abs(F(x, r.referencia.enX(x)) - K) / Math.max(1, Math.abs(K));
         if (Number.isFinite(d)) peor = Math.max(peor, d);
       }
-      itemVerificacion(peor < 1e-6 ? "ok" : "bad", "verif.edoImplicita", { error: cientifica(peor) });
+      lista.push(comprobacion({ componente: "solucionExacta", resultado: peor < 1e-6 ? "ok" : "falla", clave: "verif.edoImplicita", datos: { error: cientifica(peor) }, errorRel: peor }));
     } catch {
-      itemVerificacion("aviso", "verif.jsNoEvaluable");
+      lista.push(comprobacion({ componente: "solucionExacta", resultado: "inconclusa", clave: "verif.jsNoEvaluable", requerida: false }));
     }
   } else if (!r.pendiente) {
-    itemVerificacion("aviso", "verif.edoSoloNumerica");
+    lista.push(comprobacion({ componente: "solucionExacta", resultado: "informativa", clave: "verif.edoSoloNumerica" }));
   }
-  // RK4 frente a Dormand–Prince: dos métodos numéricos distintos deben coincidir.
+  // 3. La solución numérica: RK4 y Dormand–Prince, dos métodos distintos, deben coincidir.
   const rk4 = integrarConPaso("rk4", r.f, r.x0, r.y0, r.xf, Math.abs(r.xf - r.x0) / 2000);
   const ref = r.referencia.enX(r.xf);
   if (!rk4.detenido && Number.isFinite(ref)) {
-    const d = Math.abs(rk4.ys.at(-1) - ref);
-    itemVerificacion(d < 1e-6 * Math.max(1, Math.abs(ref)) ? "ok" : "aviso", "verif.edoCruzada", { diferencia: cientifica(d), x: cifras(r.xf, 6) });
+    const e = errores(rk4.ys.at(-1), ref);
+    const ok = e.errorRel < 1e-6;
+    lista.push(comprobacion({ componente: "solucionNumerica", resultado: ok ? "ok" : "falla", clave: ok ? "verif.edoCruzada" : "verif.edoCruzadaFalla",
+      datos: { diferencia: cientifica(e.errorAbs), x: cifras(r.xf, 6) }, ...e }));
+  } else {
+    // RK4 de paso fijo no llegó (p. ej. rigidez extrema): la comparación no se pudo hacer.
+    lista.push(comprobacion({ componente: "solucionNumerica", resultado: "inconclusa", clave: "verif.edoCruzadaSinRK4", datos: { x: cifras(r.xf, 6) } }));
   }
-  if (r.errorSimbolico) itemVerificacion("aviso", "verif.sinSimbolico", { detalle: mensajeDeError(r.errorSimbolico) });
+  if (r.errorSimbolico) lista.push(comprobacion({ componente: "ecuacion", resultado: "informativa", clave: "verif.sinSimbolico", datos: { detalle: mensajeDeError(r.errorSimbolico) } }));
+  return lista;
+}
+
+function pintarVerificacion() {
+  r.verif = pintarComprobaciones($("verificacion"), comprobacionesEDO1());
+  avisarEnSolucion($("panel-solucion"), r.verif);
 }
 
 // --- Código y exportación ----------------------------------------------------------------------------------
