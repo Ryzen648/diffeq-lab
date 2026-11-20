@@ -91,3 +91,11 @@ test("cada módulo con página tiene su archivo", () => {
   const paginas = new Set(readdirSync(new URL("../", import.meta.url)));
   for (const pagina of Object.values(PAGINAS)) assert.ok(paginas.has(pagina), `falta ${pagina}`);
 });
+
+test("ningún texto tiene caracteres de control (una barra perdida convierte «\\beta» en un retroceso y «\\to» en un tabulador)", () => {
+  for (const [diccionario, nombre] of [[es, "es"], [en, "en"]]) {
+    for (const [clave, texto] of Object.entries(diccionario)) {
+      assert.ok(!/[\u0000-\u001f]/.test(texto), `${nombre}.${clave} tiene un carácter de control: ¿falta duplicar una barra?`);
+    }
+  }
+});

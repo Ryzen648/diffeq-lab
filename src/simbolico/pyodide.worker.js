@@ -11,10 +11,10 @@
 export const VERSION_PYODIDE = "314.0.8";
 const URL_PYODIDE = `https://cdn.jsdelivr.net/pyodide/v${VERSION_PYODIDE}/full/pyodide.mjs`;
 
-const MODULOS_PY = ["comun.py", "pasos_integral.py", "integrales.py", "edo.py"];
+const MODULOS_PY = ["comun.py", "pasos_integral.py", "integrales.py", "edo.py", "edo2.py"];
 
 /** Funciones que se pueden llamar desde la página: "modulo.funcion". */
-const PERMITIDAS = new Set(["integrales.integrar", "edo.resolver_edo1"]);
+const PERMITIDAS = new Set(["integrales.integrar", "edo.resolver_edo1", "edo2.resolver_orden2", "edo2.resolver_sistema"]);
 
 const estado = (datos) => postMessage({ tipo: "estado", ...datos });
 
