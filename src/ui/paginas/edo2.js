@@ -30,6 +30,7 @@ import { jacobianoSimbolico, jacobianoNumerico, buscarEquilibrios } from "../../
 import { campoVectorial, rejilla } from "../../nucleo/edo/campo.js";
 import { codigoPlano } from "../../nucleo/codigo/edo2.js";
 import { enlaceJacobiano } from "../../nucleo/edo/enlace-jacobianos.js";
+import { separatrices } from "../../nucleo/edo/separatrices.js";
 import { leerFragmento, escribirFragmento } from "../../nucleo/estado-url.js";
 import { EJEMPLOS, ejemplo as buscarEjemplo } from "../../ejemplos.js";
 import { resolverOrden2Simbolico, resolverSistemaSimbolico, alEstadoSimbolico } from "../../simbolico/cliente.js";
@@ -315,11 +316,15 @@ function calcular({ soloNumerico = false, desdeUsuario = false } = {}) {
     const busqueda = buscarEquilibrios(r.Fxy, Jfn, wx, wy);
     r.equilibrios = busqueda.equilibrios;
     r.demasiados = busqueda.demasiados;
+    // Separatrices de las sillas (hasta 6: con más, el dibujo se satura).
+    r.separatrices = r.equilibrios.filter((e) => e.tipo === "silla").slice(0, 6)
+      .map((e) => separatrices(r.Fxy, e, r.ventana)).filter(Boolean);
   } else {
     r.campo = null;
     r.nulclinas = null;
     r.equilibrios = [];
     r.demasiados = false;
+    r.separatrices = [];
   }
 
   // Las trayectorias añadidas se recalculan con el sistema nuevo (los parámetros pueden haber cambiado).
@@ -642,6 +647,14 @@ function pintarFase() {
         line: { color: colorSerie(k === 0 ? 5 : 4), width: 2, dash: k === 0 ? "dot" : "dash" }, showscale: false, showlegend: true,
         name: t("edo2.nulclina", { var: k === 0 ? n.x : n.y }), hoverinfo: "skip",
       }));
+    }
+    // Separatrices: una traza por variedad, con las ramas separadas por null. La estable va
+    // discontinua y encima: cuando coinciden (órbitas heteroclínicas, como en el péndulo) se ven las dos.
+    for (const [clave, color, dash] of [["inestables", colorSerie(1), "solid"], ["estables", colorSerie(2), "dash"]]) {
+      const ramas = r.separatrices.flatMap((s) => s[clave]);
+      if (!ramas.length) continue;
+      datos.push({ x: ramas.flatMap((q) => [...q.xs, null]), y: ramas.flatMap((q) => [...q.ys, null]), type: "scatter", mode: "lines",
+        line: { color, width: 1.8, dash }, name: t(`edo2.separatriz.${clave}`), hoverinfo: "skip" });
     }
     datos.push({ x: r.referencia.denso.Ys.map((Y) => Y[0]), y: r.referencia.denso.Ys.map((Y) => Y[1]), type: "scatter", mode: "lines",
       line: { color: colorSerie(0), width: 3 }, name: t("edo1.solucionNumerica") });
