@@ -25,7 +25,9 @@ const resultado = py.runPython(String.raw`
 import sys, time, traceback, importlib, os
 sys.path[:0] = ["/lab/py", "/lab/pruebas"]
 lineas, fallos, total = [], 0, 0
-for archivo in sorted(f for f in os.listdir("/lab/pruebas") if f.startswith("test_") and f.endswith(".py")):
+# test_codigo_generado.py necesita subprocess (no existe en Pyodide): su
+# equivalente local es scripts/probar-codigo-generado.mjs.
+for archivo in sorted(f for f in os.listdir("/lab/pruebas") if f.startswith("test_") and f.endswith(".py") and f != "test_codigo_generado.py"):
     modulo = importlib.import_module(archivo[:-3])
     for nombre in sorted(n for n in dir(modulo) if n.startswith("test_")):
         total += 1

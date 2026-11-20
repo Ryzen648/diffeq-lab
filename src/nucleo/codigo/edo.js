@@ -17,10 +17,12 @@ const HINT_DSOLVE = Object.freeze({
 });
 
 /**
- * f: árbol de f(x, y) con los parámetros ya sustituidos.
+ * f: árbol de f(x, y) con los parámetros ya sustituidos; M, N: los de la forma
+ * M + N·y' = 0 (hacen falta para el método exacto: escrita como y' = f, una
+ * exacta deja de parecerlo y dsolve no reconoce el hint «1st_exact»).
  * x0, y0, xf: números. metodo: el simbólico elegido (o null).
  */
-export function codigoEDO({ f, textoOriginal, x0, y0, xf, metodo = null }) {
+export function codigoEDO({ f, M = null, N = null, textoOriginal, x0, y0, xf, metodo = null }) {
   const fNumpy = aPython(f, "numpy");
   const fSympy = aPython(f, "sympy");
   const lineas = [
@@ -78,13 +80,23 @@ export function codigoEDO({ f, textoOriginal, x0, y0, xf, metodo = null }) {
       "import sympy as sp",
       "x = sp.symbols('x')",
       "y = sp.Function('y')",
-      `F = sp.sympify("${fSympy}", locals={"x": x, "y": y(x)}, rational=True)`,
-      "ecuacion = sp.Eq(y(x).diff(x), F)",
+      ...(metodo === "exacta" && M && N
+        ? [
+          "# Forma M + N·y' = 0: así la reconoce dsolve como exacta",
+          `M = sp.sympify("${aPython(M, "sympy")}", locals={"x": x, "y": y(x)}, rational=True)`,
+          `N = sp.sympify("${aPython(N, "sympy")}", locals={"x": x, "y": y(x)}, rational=True)`,
+          "ecuacion = sp.Eq(M + N * y(x).diff(x), 0)",
+        ]
+        : [
+          `F = sp.sympify("${fSympy}", locals={"x": x, "y": y(x)}, rational=True)`,
+          "ecuacion = sp.Eq(y(x).diff(x), F)",
+        ]),
       "# simplify=False: sin él, dsolve intenta despejar y y puede tardar mucho (p. ej. en exactas)",
       `solucion = sp.dsolve(ecuacion, y(x), hint="${HINT_DSOLVE[metodo]}", simplify=False)`,
       "print(solucion)",
       "soluciones = solucion if isinstance(solucion, list) else [solucion]",
-      "print('Comprobación (checkodesol):', [sp.checkodesol(ecuacion, s)[0] for s in soluciones])",
+      "# solve_for_func=False: comprueba derivando sin despejar y (despejar una cúbica puede no terminar)",
+      "print('Comprobación (checkodesol):', [sp.checkodesol(ecuacion, s, solve_for_func=False)[0] for s in soluciones])",
     );
   }
   lineas.push(

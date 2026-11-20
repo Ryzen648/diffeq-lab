@@ -723,8 +723,8 @@ function pintarVerificacion() {
 
 function textoPython() {
   return codigoEDO({
-    f: sustituirParametros(r.edo.f), textoOriginal: r.entrada.ecuacion,
-    x0: r.x0, y0: r.y0, xf: r.xf, metodo: r.simbolico?.metodo ?? null,
+    f: sustituirParametros(r.edo.f), M: sustituirParametros(r.edo.M), N: sustituirParametros(r.edo.N),
+    textoOriginal: r.entrada.ecuacion, x0: r.x0, y0: r.y0, xf: r.xf, metodo: r.simbolico?.metodo ?? null,
   });
 }
 

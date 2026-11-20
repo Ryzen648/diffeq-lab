@@ -24,15 +24,25 @@ jobs:
       - run: npm test
 
   python:
-    name: Parte simbólica (CPython + pytest)
+    name: Parte simbólica y código Python generado (CPython + pytest)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+        with:
+          submodules: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Código Python de cada ejemplo y el valor que calcula la página para él.
+      - run: node scripts/generar-codigo-ejemplos.mjs codigo-generado
       - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       # Misma versión de SymPy que trae Pyodide 314.0.8 (la que usa la página).
-      - run: pip install sympy==1.14.0 pytest
-      - run: pytest tests/python
+      - run: pip install sympy==1.14.0 numpy scipy pytest
+      - run: pytest tests/python -v
         env:
           PYTHONPATH: src/simbolico/py
+          CODIGO_GENERADO: codigo-generado
