@@ -31,8 +31,7 @@ test("cada código de error del núcleo tiene texto y se lanza en algún sitio",
       else if (e.name.endsWith(".js") && e.name !== "errores.js") fuentes.push(leer(`${carpeta}${e.name}`));
     }
   };
-  recorrer("../src/nucleo/");
-  recorrer("../comun/js/entrada/");
+  for (const carpeta of ["../src/nucleo/", "../src/workers/", "../src/simbolico/", "../comun/js/entrada/"]) recorrer(carpeta);
   const todo = fuentes.join("\n");
   for (const codigo of CODIGOS) {
     assert.ok(existentes.has(`error.${codigo}`), `falta el texto de error.${codigo}`);
