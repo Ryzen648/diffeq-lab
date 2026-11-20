@@ -27,6 +27,14 @@ const CODIGOS_PROPIOS = [
   "noFormaNormal",             // {}
   "nombreReservado",           // { nombre }
 
+  // --- Problema de valor inicial (src/nucleo/edo/problema.js) ---
+  "edpFase3",                  // {}
+  "orden2Fase2",               // { orden }
+  "rangoInvalido",             // {}
+  "condicionFueraDeRango",     // { x0, xmin, xmax }
+  "pasoInvalido",              // {}
+  "toleranciaInvalida",        // {}
+
   // --- Cálculos en un Web Worker (src/workers/rpc.js) ---
   "tiempoAgotado",             // { segundos }
   "calculoCancelado",          // {}
