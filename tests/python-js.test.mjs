@@ -47,3 +47,31 @@ test("el estilo numpy da el mismo valor que math.js (evaluado con una traducció
     }
   }
 });
+
+test("paréntesis anidados (los que escribe el editor visual) no cambian la expresión", () => {
+  // Caso real: el editor visual guardaba x/(x^2+1)^(5/2) como ((x)/((x^(2)+1)^(((5)/(2))))) y
+  // SymPy recibía x/(x**2 + 1)**5/2, es decir x/(2(x²+1)⁵): otra integral.
+  assert.equal(py("((x)/((x^(2)+1)^(((5)/(2)))))"), "x/(x**2 + 1)**(5/2)");
+  assert.equal(py("x/(x^2+1)^((5/2))"), "x/(x**2 + 1)**(5/2)");
+  assert.equal(py("((x - 1))/(((x + 1)))"), "(x - 1)/(x + 1)");
+  assert.equal(py("2^(((x + 1)))"), "2**(x + 1)");
+  assert.equal(py("-(((x + 1)))^2"), "-(x + 1)**2");
+});
+
+test("con uno, dos o tres pares de paréntesis en cada operación, Python da el mismo valor que math.js", () => {
+  const np = { exp: Math.exp, sqrt: Math.sqrt };
+  const casos = ["x/(x^2+1)^(5/2)", "(x - y)/(x*y) - y^(x/2)", "2^(x+1)/3", "x^2/(x + y)^(1/3)", "(x+y)^2/(x - 2*y)", "exp(-x/2)*(x - y)/(y + 1)"];
+  for (const texto of casos) {
+    const base = analizarFuncion(texto);
+    const todos = base.toString({ parenthesis: "all" }); // cada operación entre paréntesis
+    for (const k of [1, 2, 3]) {
+      const nodo = mathjs.parse(todos.replaceAll("(", "(".repeat(k)).replaceAll(")", ")".repeat(k)));
+      const codigo = aPython(nodo, "numpy");
+      const fn = new Function("np", "x", "y", `return ${codigo};`);
+      for (const [x, y] of [[0.7, 1.3], [2.1, 0.4]]) {
+        const esperado = base.evaluate({ x, y });
+        assert.ok(Math.abs(fn(np, x, y) - esperado) <= 1e-12 * Math.max(1, Math.abs(esperado)), `${texto} (×${k}) → ${codigo}`);
+      }
+    }
+  }
+});
