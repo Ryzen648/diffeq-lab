@@ -170,9 +170,11 @@ def traducir(regla, contador=None):
         d["du"] = tex(sp.diff(u, var))
         d["v"] = tex(limpiar(regla.v_step.eval()))
         d["var"] = tex(var)
-        paso["hijos"].append(hijo(regla.v_step))
+        # Dos integrales distintas que pueden parecer iguales (∫eˣ dos veces):
+        # «rol» le dice a la interfaz cuál es cuál.
+        paso["hijos"].append({**hijo(regla.v_step), "rol": "hallarV"})
         if regla.second_step is not None:
-            paso["hijos"].append(hijo(regla.second_step))
+            paso["hijos"].append({**hijo(regla.second_step), "rol": "restoPartes"})
     elif isinstance(regla, mi.RewriteRule):  # incluye CompleteSquareRule
         paso["regla"] = _tipo_reescritura(regla)
         d["reescrito"] = tex(limpiar(regla.rewritten))
