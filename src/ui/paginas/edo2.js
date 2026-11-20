@@ -29,6 +29,7 @@ import { FRACCION_CORTE } from "../../nucleo/edo/singularidad.js";
 import { jacobianoSimbolico, jacobianoNumerico, buscarEquilibrios } from "../../nucleo/edo/equilibrios.js";
 import { campoVectorial, rejilla } from "../../nucleo/edo/campo.js";
 import { codigoPlano } from "../../nucleo/codigo/edo2.js";
+import { enlaceJacobiano } from "../../nucleo/edo/enlace-jacobianos.js";
 import { leerFragmento, escribirFragmento } from "../../nucleo/estado-url.js";
 import { EJEMPLOS, ejemplo as buscarEjemplo } from "../../ejemplos.js";
 import { resolverOrden2Simbolico, resolverSistemaSimbolico, alEstadoSimbolico } from "../../simbolico/cliente.js";
@@ -736,6 +737,9 @@ function pintarEstabilidad() {
 
   // Una ficha por equilibrio: jacobiano, autovalores, autovectores y la advertencia de Hartman–Grobman.
   const lineal = r.clase.lineal === true;
+  // Para el enlace a la calculadora: el sistema con números y los nombres que ve el usuario.
+  const [f, g] = [r.p.f, r.p.g].map(sustituirParametros);
+  const nombres = r.p.modo === "orden2" ? [r.p.ec.dependiente, nombreVelocidad(r.p.ec.dependiente)] : ["x", "y"];
   r.equilibrios.slice(0, MAX_DETALLES).forEach((e, i) => {
     const ficha = crear("details", "ficha-equilibrio");
     if (i === 0) ficha.open = true;
@@ -749,6 +753,13 @@ function pintarEstabilidad() {
     ficha.append(textoConFormulas(crear("p"), t(`edo2.explica.${e.tipo}`)));
     if (!e.hiperbolico) ficha.append(textoConFormulas(crear("p", "aviso"), t(lineal ? "edo2.hartman.lineal" : "edo2.hartman.noLineal")));
     else if (!lineal) ficha.append(textoConFormulas(crear("p", "muted"), t("edo2.hartman.hiperbolico")));
+    const url = enlaceJacobiano(f, g, nombres, [e.x, e.y]);
+    if (url) {
+      const enlace = Object.assign(crear("a", "accion enlace-jacobiano", t("edo2.verJacobiano")), { href: url, target: "_blank", rel: "noopener" });
+      const parrafo = crear("p");
+      parrafo.append(enlace);
+      ficha.append(parrafo);
+    }
     detalle.append(ficha);
   });
   if (r.equilibrios.length > MAX_DETALLES) detalle.append(crear("p", "muted", t("edo2.estabilidad.masFichas", { n: MAX_DETALLES })));
