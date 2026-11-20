@@ -39,9 +39,11 @@ function pintarPaso(paso) {
       li.append(textoConFormulas(crear("p", "paso-detalle"), t("paso.partesCiclica.parte", parte)));
     }
   }
-  if (paso.integral && paso.resultado) {
+  // Pasos de integrales: «∫… = resultado». Pasos de EDO: una ecuación propia.
+  const fuente = paso.ecuacion ?? (paso.integral && paso.resultado ? `${paso.integral} = ${paso.resultado}` : null);
+  if (fuente) {
     const ecuacion = crear("div", "math paso-ecuacion");
-    pintarTex(ecuacion, `${paso.integral} = ${paso.resultado}`);
+    pintarTex(ecuacion, fuente);
     li.append(ecuacion);
   }
   const hijos = (paso.hijos ?? []).filter(Boolean);
@@ -53,9 +55,10 @@ function pintarPaso(paso) {
   return li;
 }
 
+/** `raiz`: un paso (integrales) o una lista de pasos (EDO). */
 export function pintarPasos(contenedor, raiz) {
   contenedor.replaceChildren();
   const lista = crear("ol", "pasos");
-  lista.append(pintarPaso(raiz));
+  for (const p of Array.isArray(raiz) ? raiz : [raiz]) lista.append(pintarPaso(p));
   contenedor.append(lista);
 }
