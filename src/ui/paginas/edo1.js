@@ -153,7 +153,7 @@ function refrescarVivo() {
   $("etiquetaXf").textContent = t("edo1.hasta.var", { var: ec.independiente });
   chip(t("tipo.orden", { orden: ec.orden }));
   if (ec.orden > 1) {
-    chip(t("tipo.proximamente", { fase: 2 }), "aviso");
+    chip(ec.orden === 2 ? t("tipo.enOrden2") : t("tipo.sinMetodo"), "aviso");
     sincronizarParametros([]);
     pintarTex($("vistaPrevia"), ecuacionTex(ec));
     return;

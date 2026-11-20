@@ -36,6 +36,13 @@ const CODIGOS_PROPIOS = [
   "pasoInvalido",              // {}
   "toleranciaInvalida",        // {}
 
+  // --- Plano de fase: orden 2 y sistemas (src/nucleo/edo/plano.js) ---
+  "noOrden2",                  // { orden }
+  "noFormaNormal2",            // {}
+  "ventanaIncompleta",         // {}
+  "ventanaInvalida",           // {}
+  "planoNoDefinido",           // { t0, x0, y0 }
+
   // --- Cálculos en un Web Worker (src/workers/rpc.js) ---
   "tiempoAgotado",             // { segundos }
   "calculoCancelado",          // {}

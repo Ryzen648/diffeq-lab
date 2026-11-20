@@ -32,6 +32,22 @@ def _cero(expr):
     return sp.simplify(expr) == 0
 
 
+def _combinacion(terminos):
+    """[(coeficiente, texto)] -> «y'' + 2\\,y' - y» sin «1·», sin «+ -» y sin términos nulos."""
+    partes = []
+    for coef, texto in terminos:
+        if coef == 0:
+            continue
+        negativo = coef.could_extract_minus_sign()
+        absoluto = -coef if negativo else coef
+        cuerpo = texto if absoluto == 1 else f"{tex(absoluto) if absoluto.is_Atom else '(' + tex(absoluto) + ')'}\\,{texto}"
+        partes.append(("- " if negativo else "+ ") + cuerpo)
+    if not partes:
+        return "0"
+    primero = partes[0]
+    return " ".join([primero[2:] if primero.startswith("+") else "-" + primero[2:]] + partes[1:])
+
+
 # --- Orden 2 ----------------------------------------------------------------------
 
 def clasificar_orden2(F, y, y1, y2):
@@ -103,11 +119,11 @@ def resolver_orden2(texto_F, x0_texto, y0_texto, v0_texto):
     euler = clase == "cauchyEuler"
     salida["metodo"] = clase
     if euler:
-        pasos.append(paso("edo2.euler.forma", f"{tex(a)}\\,x^2 y'' + {tex(b)}\\,x\\,y' + {tex(c)}\\,y = 0"))
+        pasos.append(paso("edo2.euler.forma", _combinacion([(a, "x^2 y''"), (b, "x\\,y'"), (c, "y")]) + " = 0"))
         if x0 <= 0:
             salida["notas"].append("eulerSoloPositivo")
     else:
-        pasos.append(paso("edo2.cc.forma", f"{tex(a)}\\,y'' + {tex(b)}\\,y' + {tex(c)}\\,y = {tex(r)}"))
+        pasos.append(paso("edo2.cc.forma", _combinacion([(a, "y''"), (b, "y'"), (c, "y")]) + f" = {tex(r)}"))
     if euler:
         # Con y = x^m: a·m(m − 1) + b·m + c = 0, es decir a·m² + (b − a)·m + c = 0.
         polinomio, (r1, r2), caso, yh = _homogenea_caracteristica(a, b - a, c, X, euler=True)
