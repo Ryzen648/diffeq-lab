@@ -50,7 +50,7 @@ const LIMITE_ESTABILIDAD = { euler: 2, heun: 2, rk4: 2.785, dopri: 3.3 };
 
 let campo;
 const valoresParametros = {};
-let parametrosActuales = [];
+let parametrosActuales = null; // lista con deslizadores en pantalla (null: repintar)
 let temporizadorVivo = null;
 let numeroCalculo = 0;
 let r = null;
@@ -104,6 +104,22 @@ function prepararCalculo() {
 
 // --- En vivo: vista previa, clasificación y parámetros ----------------------------------------
 
+/**
+ * Deja los deslizadores de acuerdo con los parámetros de la fórmula actual.
+ * Se compara con lo que está PINTADO (null tras cargar un ejemplo o un enlace:
+ * fuerza a repintar). Antes se comparaba con una lista vaciada a mano, y al
+ * pasar a una fórmula sin parámetros ([] === []) quedaban los deslizadores viejos.
+ */
+function sincronizarParametros(lista) {
+  if (parametrosActuales !== null && lista.join() === parametrosActuales.join()) return;
+  parametrosActuales = [...lista];
+  pintarDeslizadores($("parametros"), parametrosActuales, valoresParametros, {
+    t,
+    alMover: () => { if (r) calcular({ soloNumerico: true }); },
+    alSoltar: () => { if (r) calcular({}); },
+  });
+}
+
 function refrescarVivo() {
   clearTimeout(temporizadorVivo);
   const { ecuacion } = leerEntrada();
@@ -128,6 +144,7 @@ function refrescarVivo() {
     chip(t("tipo.edp"), "aviso");
     chip(t("tipo.orden", { orden: ec.orden }));
     chip(t("tipo.proximamente", { fase: 3 }), "aviso");
+    sincronizarParametros([]);
     pintarTex($("vistaPrevia"), "\\text{" + t("tipo.edp") + "}");
     return;
   }
@@ -137,17 +154,11 @@ function refrescarVivo() {
   chip(t("tipo.orden", { orden: ec.orden }));
   if (ec.orden > 1) {
     chip(t("tipo.proximamente", { fase: 2 }), "aviso");
+    sincronizarParametros([]);
     pintarTex($("vistaPrevia"), ecuacionTex(ec));
     return;
   }
-  if (ec.parametros.join() !== parametrosActuales.join()) {
-    parametrosActuales = ec.parametros;
-    pintarDeslizadores($("parametros"), parametrosActuales, valoresParametros, {
-      t,
-      alMover: () => { if (r) calcular({ soloNumerico: true }); },
-      alSoltar: () => { if (r) calcular({}); },
-    });
-  }
+  sincronizarParametros(ec.parametros);
   let edo;
   try {
     edo = leerEDO(ecuacion);
@@ -252,6 +263,10 @@ function estimarLambda(f, solucion) {
 }
 
 function calcular({ soloNumerico = false, desdeUsuario = false } = {}) {
+  // Sin esperar a la revisión en vivo (300 ms tras teclear): así los deslizadores
+  // y la lista de parámetros corresponden a la ecuación que se va a calcular.
+  // (Al mover un deslizador no hace falta: la lista no cambia.)
+  if (!soloNumerico) refrescarVivo();
   let datos;
   try {
     datos = prepararCalculo();
@@ -301,7 +316,7 @@ function calcular({ soloNumerico = false, desdeUsuario = false } = {}) {
   r.lambda = estimarLambda(f, r.referencia);
   r.yExacta = null;
 
-  guardarEnURL();
+  guardarEnURL(edo.ec.parametros);
   pintarTodo();
   $("resultados").hidden = false;
   if (desdeUsuario) llevarAlResultado($("resultados"));
@@ -816,12 +831,13 @@ function conectarExportar() {
 
 // --- Estado en la URL, ejemplos y arranque -------------------------------------------------------------------
 
-function guardarEnURL() {
+/** `parametros`: los de la ecuación que se acaba de calcular (no los del último repintado). */
+function guardarEnURL(parametros) {
   const e = leerEntrada();
   history.replaceState(null, "", escribirFragmento({
     // «desde» solo se escribe si se usa (vacío = x0). Ver migrarEstadoAntiguo para los enlaces viejos.
     e: e.ecuacion, x0: e.x0, y0: e.y0, xf: e.xf, desde: e.desde, h: e.h, tol: e.tol, m: e.metodoSimbolico,
-    parametros: Object.fromEntries(parametrosActuales.map((p) => [p, valoresParametros[p]])),
+    parametros: Object.fromEntries(parametros.map((p) => [p, valoresParametros[p]])),
   }));
 }
 
@@ -835,7 +851,7 @@ function cargarEstado({ ecuacion, e, x0 = "0", y0 = "1", xf = "5", desde = "", h
   $("tolerancia").value = tol;
   $("metodoSimbolico").value = m;
   Object.assign(valoresParametros, parametros);
-  parametrosActuales = [];
+  parametrosActuales = null;
   trayectorias = [];
   refrescarVivo();
 }
