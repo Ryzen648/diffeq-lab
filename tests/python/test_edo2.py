@@ -138,3 +138,12 @@ def test_sistema_no_lineal_sin_metodo():
     r = _sistema("x*(1 - y)", "0.5*y*(x - 1)", "0", "1", "2")  # Lotka–Volterra
     assert r["clase"] == "noLineal" and r["metodo"] is None
     assert _sistema("y", "-x + sin(t)", "0", "1", "0")["clase"] == "linealNoAutonomo"
+
+
+def test_forma_sin_coeficientes_uno_ni_signos_dobles():
+    from edo2 import _combinacion
+    assert _combinacion([(sp.Integer(1), "y''"), (sp.Integer(2), "y'"), (sp.Integer(-5), "y")]) == r"y'' + 2\,y' - 5\,y"
+    assert _combinacion([(sp.Integer(-1), "y''"), (sp.Integer(0), "y'"), (sp.Rational(1, 2), "y")]) == r"-y'' + \frac{1}{2}\,y"
+    assert _combinacion([(sp.Integer(0), "y")]) == "0"
+    r = _orden2("D2y + 2*D1y + 5*y", "0", "1", "0")
+    assert r["pasos"][0]["ecuacion"] == r"y'' + 2\,y' + 5\,y = 0"
