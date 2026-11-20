@@ -22,3 +22,17 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
+
+  python:
+    name: Parte simbólica (CPython + pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      # Misma versión de SymPy que trae Pyodide 314.0.8 (la que usa la página).
+      - run: pip install sympy==1.14.0 pytest
+      - run: pytest tests/python
+        env:
+          PYTHONPATH: src/simbolico/py

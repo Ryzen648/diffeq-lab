@@ -17,6 +17,12 @@ const CODIGOS_PROPIOS = [
   "limitesIguales",            // {}
   "limiteInfinitoNoAdmitido",  // { campo }
 
+  // --- Cálculos en un Web Worker (src/workers/rpc.js) ---
+  "tiempoAgotado",             // { segundos }
+  "calculoCancelado",          // {}
+  "trabajadorNoDisponible",    // { detalle }
+  "errorEnTrabajador",         // { detalle }
+
   // --- Cuadratura ---
   "integrandoNoFinito",        // { x }
   "subintervalosInvalidos",    // { n, minimo }
