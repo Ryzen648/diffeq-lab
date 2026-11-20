@@ -23,6 +23,23 @@ jobs:
       - run: npm ci
       - run: npm test
 
+  banco:
+    name: Banco de pruebas (ninguna respuesta errónea presentada como verificada)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Casos a mano y generados con la semilla de desarrollo.
+      - run: node scripts/banco.mjs --semilla 1 --n 120
+      # Semilla reservada: no se usa al desarrollar; sirve para detectar sobreajuste.
+      - run: node scripts/banco.mjs --semilla 314159 --n 120
+
   python:
     name: Parte simbólica y código Python generado (CPython + pytest)
     runs-on: ubuntu-latest
