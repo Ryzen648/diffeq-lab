@@ -143,3 +143,14 @@ ol.pasos-hijos { border-left: 2px solid var(--border); padding-left: 1.2rem; mar
 .veredicto.diverge { color: var(--bad); }
 .veredicto.dudoso { color: var(--warn); }
 .causas { margin: 4px 0 8px; padding-left: 1.2rem; }
+
+/* --- EDO de orden 2 y sistemas --- */
+/* Cuatro condiciones (t₀, x(t₀), y(t₀), t final): en dos filas en pantallas estrechas. */
+.fila-condiciones.cuatro { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 560px) { .fila-condiciones.cuatro { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tipo-problema { margin: 4px 0 10px; }
+.ficha-equilibrio { border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; margin: 10px 0; }
+.ficha-equilibrio summary { cursor: pointer; font-weight: 600; }
+.ficha-equilibrio .math { overflow-x: auto; }
+/* El retrato de fase lleva una leyenda larga: en móvil, más alto para que el dibujo no quede aplastado. */
+@media (max-width: 560px) { .grafica.fase { height: 560px; } }
