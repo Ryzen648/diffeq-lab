@@ -11,6 +11,7 @@ export { ErrorCalculo };
 const CODIGOS_PROPIOS = [
   // --- Expresiones ---
   "variableNoPermitida",       // { indice, nombre, permitidas }
+  "integrandoDistinto",        // { x }  (src/nucleo/consistencia.js)
 
   // --- Números y límites ---
   "numeroInvalido",            // { campo, texto }

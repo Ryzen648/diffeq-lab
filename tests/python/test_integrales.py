@@ -107,3 +107,66 @@ def test_barrow_a_ciegas_falla_con_singularidad_interior():
     d = _r("x**(-2)", "-1", "1")["definida"]
     assert d["diverge"] == "+"
     assert d["barrow"]["coincide"] is False
+
+
+# --- Las cinco comprobaciones del informe del error de x/(x²+1)^(5/2) ---------------------
+# No basta el valor: la primitiva que se devuelve (la que se muestra) se deriva aquí otra vez,
+# por separado, y se compara con el integrando.
+
+import sympy as sp
+
+X = sp.Symbol("x", real=True)
+
+
+def _primitiva_devuelta(r):
+    """La primitiva tal como la recibe la página (texto de math.js) -> SymPy."""
+    return sp.sympify(r["primitivaMathjs"].replace("^", "**"), locals={"x": X, "e": sp.E})
+
+
+def _deriva_al_integrando(r, f_texto):
+    F = _primitiva_devuelta(r)
+    f = sp.sympify(f_texto, locals={"x": X})
+    assert sp.simplify(sp.diff(F, X) - f) == 0, (F, f)
+    # Y SymPy integró esa misma f (no otra):
+    g = sp.sympify(r["integrandoMathjs"].replace("^", "**"), locals={"x": X})
+    assert sp.simplify(g - f) == 0, (g, f)
+    return F
+
+
+def test_prueba1_caso_del_informe_impropia_convergente():
+    r = _r("x/(x**2 + 1)**(5/2)", "-oo", "0")
+    F = _deriva_al_integrando(r, "x/(x**2 + 1)**(5/2)")
+    assert sp.simplify(F - (-1 / (3 * (X**2 + 1) ** sp.Rational(3, 2)))) == 0
+    assert r["definida"]["valor"] == r"- \frac{1}{3}" and r["definida"]["diverge"] is None
+    assert math.isclose(float(r["definida"]["numero"]), -1 / 3, rel_tol=1e-15)
+    # Con la primitiva: F(0) − lím_{b→−∞} F(b) = −1/3 − 0.
+    assert sp.limit(F, X, 0) - sp.limit(F, X, -sp.oo) == sp.Rational(-1, 3)
+    assert r["verificacion"]["simbolica"]
+
+
+def test_prueba2_divergente_por_singularidad_interior():
+    r = _r("1/x**2", "-1", "1")
+    _deriva_al_integrando(r, "1/x**2")  # F = −1/x, válida a cada lado de 0
+    assert r["definida"]["diverge"] == "+"
+    assert r["definida"]["numero"] is None
+
+
+def test_prueba3_definida_sencilla():
+    r = _r("2*x", "0", "2")
+    F = _deriva_al_integrando(r, "2*x")
+    assert sp.simplify(F - X**2) == 0
+    assert r["definida"]["valor"] == "4" and r["definida"]["diverge"] is None
+
+
+def test_prueba4_indefinida():
+    r = _r("3*x**2")
+    F = _deriva_al_integrando(r, "3*x**2")
+    assert sp.simplify(F - X**3) == 0
+    assert r["definida"] is None
+
+
+def test_prueba5_impropia_convergente_infinito():
+    r = _r("exp(-x)", "0", "oo")
+    F = _deriva_al_integrando(r, "exp(-x)")
+    assert sp.simplify(F + sp.exp(-X)) == 0
+    assert r["definida"]["valor"] == "1" and r["definida"]["diverge"] is None
